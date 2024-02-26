@@ -13,7 +13,7 @@ class WorldEntity(ABC):
             pos: The position to start with
         """
         super().__init__()
-        self.pos = pos
+        self.pos: Position = pos
 
     @abstractmethod
     def __hash__(self) -> int:
@@ -28,3 +28,18 @@ class WorldEntity(ABC):
         Resets the world entity at the start of a new day.
         """
         raise NotImplementedError("Every entity needs to reset itself at the start of a new day.")
+    
+    @abstractmethod
+    def to_json(self):
+        """
+        Returns a json serializable form of this world entity.
+        """
+        raise NotImplementedError("Every entity needs its own way of being transformed into JSON.")
+    
+    @staticmethod
+    @abstractmethod
+    def from_json(data: dict):
+        """
+        Makes a world entity from a json file
+        """
+        raise NotImplementedError("Every entity must be able to generate itself from JSON.")
