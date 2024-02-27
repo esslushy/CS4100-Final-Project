@@ -31,7 +31,7 @@ class Agent(WorldEntity):
         self.aggressiveness = aggressiveness
         self.harvest_percent = harvest_percent
         self.max_memory = max_memory
-        self.memory: OrderedDict = memory
+        self.memory: OrderedDict[WorldEntity, str] = memory
         self.name = f"Agent {AgentCounter.get_next()}"
 
     def is_well_bounded(self, aggressiveness: float, harvest_percent: float, max_memory: int) -> bool:
@@ -160,7 +160,6 @@ class Agent(WorldEntity):
             "aggressiveness": self.aggressiveness,
             "harvest_percent": self.harvest_percent,
             # Semipermenant state
-            "memory": self.memory,
             "x": self.pos.x,
             "y": self.pos.y
         }
@@ -168,7 +167,7 @@ class Agent(WorldEntity):
     @staticmethod
     def from_json(data: dict):
         return Agent(Position(data["x"], data["y"]), data["aggressiveness"], 
-                     data["harvest_percent"], data["max_memory"], OrderedDict(data["memory"]))
+                     data["harvest_percent"], data["max_memory"])
 
     @staticmethod
     def from_parents(parent1, parent2):

@@ -44,6 +44,9 @@ class World:
             for _ in range(INIT_NUM_AGENTS):
                 self.agents.append(Agent(Position.get_random_pos(), np.random.random(), 
                                          np.random.random(), np.random.randint(MEMORY_BOUNDS[0], MEMORY_BOUNDS[1]+1)))
+        # Initial checkpoint
+        with open(checkpoints.joinpath(f"checkpoint_0.json"), "wt+") as f:
+            json.dump(self.to_json(), f, indent=4)
         # Make plot
         self.fig, ((map, self.memory_bar_chart), (self.agg_hist, self.harvest_hist)) = plt.subplots(2, 2, figsize=(8, 8), tight_layout=True)
         # Set title and axis
@@ -112,7 +115,7 @@ class World:
         Args:
             timestep: The timestep of this action
         """
-        current_day = (timestep // STEPS_PER_DAY)
+        current_day = (timestep // STEPS_PER_DAY) + 1
         timestep %= STEPS_PER_DAY
         for agent in self.agents:
             view, interact = set(), set()
@@ -151,7 +154,7 @@ class World:
                 rect.set_height(count)
             for count, rect in zip(np.histogram(harvest, NUM_BINS)[0], self.harvest_hist.patches):
                 rect.set_height(count)
-            # If current day is at checkpoint
+            # If current day is at checkpoint. 
             if current_day % DAYS_PER_CHECKPOINT == 0:
                 with open(checkpoints.joinpath(f"checkpoint_{current_day}.json"), "wt+") as f:
-                    json.dump(self.to_json, f)
+                    json.dump(self.to_json(), f, indent=4)
