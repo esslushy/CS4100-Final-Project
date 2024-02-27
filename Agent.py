@@ -1,6 +1,7 @@
 from ProjectParameters import AGGRESSIVE_BOUNDS, HARVEST_BOUNDS, MEMORY_BOUNDS, \
-    STEPS_PER_DAY, CAL_PER_MEM, MAX_AGGR_CAL, MAX_HARVEST_CAL
-from enum import Enum
+    STEPS_PER_DAY, CAL_PER_MEM, MAX_AGGR_CAL, MAX_HARVEST_CAL, CHANCE_TO_REMEMBER_BUSH, \
+    CHANCE_TO_REMEMBER_CAVE, CHANCE_TO_USE_MEMORY
+from ActionSpace import ActionSpace
 from WorldEntity import WorldEntity
 from Position import Position
 from typing import Set, List
@@ -12,12 +13,6 @@ from Cave import Cave
 
 AgentCounter = Counter()
 
-ActionSpace = Enum("ActionSpace", [
-    "Wander",
-    "GoTo",
-    "Sleep"
-])
-
 class Agent(WorldEntity):
     """
     Represents an agent in the world with a set of genes, goals, location, and actions
@@ -27,7 +22,7 @@ class Agent(WorldEntity):
     seen_today: Set[WorldEntity] = set()
     calories: int = 0
     
-    def __init__(self, pos: Position, aggressiveness: float, harvest_percent: float, max_memory: int, memory: OrderedDict = OrderedDict) -> None:
+    def __init__(self, pos: Position, aggressiveness: float, harvest_percent: float, max_memory: int, memory: OrderedDict = OrderedDict()) -> None:
         super().__init__(pos)
         if not self.is_well_bounded(aggressiveness, harvest_percent, max_memory):
             raise ValueError("Genetics are not within proper range.")
@@ -52,7 +47,10 @@ class Agent(WorldEntity):
             timestep: The current timestep for the day
         """
         # Figure out everything we know about (see and remember), filter out what we've already gone to.
-        possible_goals = set(view) + self.memory
+        possible_goals = view.copy()
+        # Some small chance to include memory
+        if np.random.random() < CHANCE_TO_USE_MEMORY:
+            possible_goals.extend(self.memory.keys())
         possible_goals = filter(lambda e: e not in self.seen_today, possible_goals)
         # Do action based on current state
         if self.action_state == ActionSpace.GoTo:
@@ -65,8 +63,9 @@ class Agent(WorldEntity):
                     self.interact_bush(self.goal)
                 else:
                     self.interact_agent(self.goal)
-                # Reset to wander
-                self.action_state = ActionSpace.Wander
+                if self.action_state != ActionSpace.Sleep:
+                    # If didn't go to sleep in a cave
+                    self.action_state = ActionSpace.Wander
                 self.goal = None
             else:
                 # Continue going toward goal
@@ -77,31 +76,35 @@ class Agent(WorldEntity):
             # Set up goal for next action
             if timestep % STEPS_PER_DAY < (STEPS_PER_DAY * 0.1):
                 # Morning, go to any berry bushes you see or know, otherwise keep wandering
-                bushes = filter(lambda e: type(e) == BerryBush, possible_goals)
+                bushes = list(filter(lambda e: type(e) == BerryBush, possible_goals))
                 if len(bushes) > 0:
                     self.action_state = ActionSpace.GoTo
-                    self.goal = np.random.choice(list(bushes))
+                    self.goal = np.random.choice(bushes)
             elif timestep % STEPS_PER_DAY > (STEPS_PER_DAY * 0.9):
                 # Evening, go to any cave you see or know, otherwise wander
-                caves = filter(lambda e: type(e) == Cave, possible_goals)
+                caves = list(filter(lambda e: type(e) == Cave, possible_goals))
                 if len(caves) > 0:
                     self.action_state = ActionSpace.GoTo
-                    self.goal = np.random.choice(list(caves))
+                    self.goal = np.random.choice(caves)
             else:
                 # Midday, go to any bushes or entities you see or know, otherwise keep wandering
-                bushes_and_agents = filter(lambda e: type(e) == BerryBush or type(e) == Agent, possible_goals)
+                bushes_and_agents = list(filter(lambda e: type(e) == BerryBush or type(e) == Agent, possible_goals))
                 if len(bushes_and_agents) > 0:
                     self.action_state = ActionSpace.GoTo
-                    self.goal = np.random.choice(list(bushes_and_agents))
+                    self.goal = np.random.choice(bushes_and_agents)
         # If neither of these actions, we are sleeping which is no change.
 
     def interact_bush(self, bush: BerryBush):
         self.calories += bush.harvest(self.harvest_percent)
         self.seen_today.add(bush)
+        if np.random.random() < CHANCE_TO_REMEMBER_BUSH:
+            self.add_memory(bush)
 
     def interact_cave(self, cave: Cave):
         cave.append(self)
         self.seen_today.add(cave)
+        if np.random.random() < CHANCE_TO_REMEMBER_CAVE:
+            self.add_memory(cave)
 
     def interact_agent(self, other):
         """
@@ -138,7 +141,7 @@ class Agent(WorldEntity):
         self.calories = 0
         self.action_state = ActionSpace.Wander
         self.goal = None
-        self.seen_today = {}
+        self.seen_today = set()
 
     def __hash__(self) -> int:
         return self.name.__hash__()
@@ -157,7 +160,8 @@ class Agent(WorldEntity):
     
     @staticmethod
     def from_json(data: dict):
-        return Agent()
+        return Agent(Position(data["x"], data["y"]), data["aggressiveness"], 
+                     data["harvest_percent"], data["max_memory"], OrderedDict(data["memory"]))
 
     @staticmethod
     def from_parents(parent1, parent2):

@@ -1,4 +1,4 @@
-from Agent import Agent, ActionSpace
+from ActionSpace import ActionSpace
 import numpy as np
 from typing import Set
 from WorldEntity import WorldEntity
@@ -20,10 +20,10 @@ class Cave(WorldEntity):
         """
         super().__init__(pos)
         self.max_capacity = max_capacity
-        self.occupants: Set[Agent] = {}
+        self.occupants: Set = set()
         self.name = f"Cave {CaveCounter.get_next()}"
 
-    def append(self, agent: Agent):
+    def append(self, agent):
         """
         Does the process for an agent entering a cave
 
@@ -35,7 +35,7 @@ class Cave(WorldEntity):
             agent.action_state = ActionSpace.Sleep
             agent.pos = self.pos
         else:
-            rival: Agent = np.random.choice(list(self.occupants))
+            rival = np.random.choice(list(self.occupants))
             # Interact and maybe chuck out rival
             if agent.is_aggressive(rival) and not rival.is_aggressive(agent):
                 # Agent successfully kicks out rival

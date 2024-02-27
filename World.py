@@ -1,22 +1,24 @@
 from ProjectParameters import (STEPS_PER_DAY, INIT_NUM_AGENTS, INIT_NUM_BUSHES, 
                                INIT_NUM_CAVES, INIT_CAVE_CAP, INIT_BUSH_CAP,
-                               DAYS_PER_CHECKPOINT)
+                               DAYS_PER_CHECKPOINT, MEMORY_BOUNDS, NUM_BINS,
+                               INTERACTION_RADIUS, VISION_RAIDUS)
 import json
 from typing import List, Optional
 from Cave import Cave
 from BerryBush import BerryBush
 from Agent import Agent
 import itertools
-from matplotlib.pyplot import subplots
+import matplotlib.pyplot as plt
 from Position import Position
 import numpy as np
 from pathlib import Path
+import random
 
 checkpoints = Path("checkpoints/")
 
 class World:
-    def __init__(self, caves: Optional[List[Cave]] = list(), bushes: Optional[List[BerryBush]] = list(), 
-                 agents: Optional[List[Agent]] = list()) -> None:
+    def __init__(self, caves: List[Cave] = list(), bushes: List[BerryBush] = list(), 
+                 agents: List[Agent] = list()) -> None:
         """
         Initializes a random world if all parameters are none
 
@@ -26,24 +28,81 @@ class World:
             agents: The list of agents to initialize with
         """
         checkpoints.mkdir(exist_ok=True)
-        # Will be used to show entities, and histograms of genes
-        self.fig, self.axes = subplots(2, 2)
         self.caves = caves
         self.bushes = bushes
         self.agents = agents
         # Add caves and bushes and agents if they are empty
-        if len(caves) == 0:
+        if len(self.caves) == 0:
             for _ in range(INIT_NUM_CAVES):
-                self.caves.append(Cave(Position.get_random_pos(), np.random.randint(3, )))
+                self.caves.append(Cave(Position.get_random_pos(), 
+                                       random.randint(INIT_CAVE_CAP[0], INIT_CAVE_CAP[1])))
+        if len(self.bushes) == 0:
+            for _ in range(INIT_NUM_BUSHES):
+                self.bushes.append(BerryBush(Position.get_random_pos(), 
+                                             random.randrange(INIT_BUSH_CAP[0], INIT_BUSH_CAP[1]+1, 50)))
+        if len(self.agents) == 0:
+            for _ in range(INIT_NUM_AGENTS):
+                self.agents.append(Agent(Position.get_random_pos(), np.random.random(), 
+                                         np.random.random(), np.random.randint(MEMORY_BOUNDS[0], MEMORY_BOUNDS[1]+1)))
+        # Make plot
+        self.fig, ((map, memory_bar_chart), (agg_hist, harvest_hist)) = plt.subplots(2, 2, figsize=(8, 8), tight_layout=True)
+        # Set title and axis
+        map.set_title("Map")
+        memory_bar_chart.set_title("Max Memory")
+        memory_bar_chart.set_ylabel("Num Agents")
+        memory_bar_chart.set_xlabel("Max Memory")
+        agg_hist.set_title("Aggressiveness")
+        agg_hist.set_ylabel("Num Agents")
+        agg_hist.set_xlabel("Aggressiveness")
+        harvest_hist.set_title("Harvest Percent")
+        harvest_hist.set_ylabel("Num Agents")
+        harvest_hist.set_xlabel("Harvest Percent")
+        # Add non mutable
+        cave_x, cave_y = [], []
+        for cave in caves:
+            cave_x.append(cave.pos.x)
+            cave_y.append(cave.pos.y)
+        map.scatter(cave_x, cave_y, c="grey", marker="^")
+        bush_x, bush_y = [], []
+        for bush in self.bushes:
+            bush_x.append(bush.pos.x)
+            bush_y.append(bush.pos.y)
+        map.scatter(bush_x, bush_y, c="green", marker="p")
+        # Add mutable
+        agent_x, agent_y = self.get_agent_pos()
+        memory, aggression, harvest = self.get_agent_data()
+        self.agent_loc = map.scatter(agent_x, agent_y, c="black", marker="o")
+        self.agent_max_memory = memory_bar_chart.hist(memory, bins=MEMORY_BOUNDS[1] + 1)
+        self.agent_aggressiveness = agg_hist.hist(aggression, bins=NUM_BINS)
+        self.agent_harvest_percent = harvest_hist.hist(harvest, bins=NUM_BINS)
+
+    def get_agent_pos(self):
+        agent_x, agent_y = [], []
+        for agent in self.agents:
+            agent_x.append(agent.pos.x)
+            agent_y.append(agent.pos.y)
+        return agent_x, agent_y
+
+    def get_agent_data(self):
+        memory, aggression, harvest = [], [], []
+        for agent in self.agents:
+            memory.append(agent.max_memory)
+            aggression.append(agent.aggressiveness)
+            harvest.append(agent.harvest_percent)
+        return memory, aggression, harvest
 
     @staticmethod
-    def from_json(filepath):
-        with open(filepath, "r") as f:
-            data = json.load(f)
+    def from_json(data: dict):
+        caves = [Cave.from_json(c) for c in data["caves"]]
+        bushes = [BerryBush.from_json(c) for c in data["caves"]]
+        agents = [Agent.from_json(c) for c in data["caves"]]
+        return World(caves, bushes, agents)
 
     def to_json(self):
         return {
-            "caves": [cave.to_json() for cave in self.caves]
+            "caves": [cave.to_json() for cave in self.caves],
+            "bushes": [bush.to_json() for bush in self.bushes],
+            "agents": [agent.to_json() for agent in self.agents]
         }
 
     def step(self, timestep: int):
@@ -55,8 +114,23 @@ class World:
         """
         current_day = (timestep // STEPS_PER_DAY) + 1
         timestep %= STEPS_PER_DAY
+        for agent in self.agents:
+            view, interact = set(), set()
+            for entity in itertools.chain(self.caves, self.bushes, self.agents):
+                if entity is not agent:
+                    dis = agent.pos.distance_to(entity.pos)
+                    if dis < VISION_RAIDUS:
+                        view.add(entity)
+                    if dis < INTERACTION_RADIUS:
+                        interact.add(entity)
+            agent.act(view, interact, timestep)
         
-        if timestep == 0:
+        # Update pos
+        agent_x, agent_y = self.get_agent_pos()
+        self.agent_loc.set_offsets(np.array(list(zip(agent_x, agent_y))))
+
+        if timestep == STEPS_PER_DAY - 1:
+            # Purge all who fail to survive
             # Make new children if there is space available
             # Reset all entities
             for entity in itertools.chain(self.caves, self.bushes, self.agents):
