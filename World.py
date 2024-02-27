@@ -1,7 +1,7 @@
 from ProjectParameters import (STEPS_PER_DAY, INIT_NUM_AGENTS, INIT_NUM_BUSHES, 
                                INIT_NUM_CAVES, INIT_CAVE_CAP, INIT_BUSH_CAP,
                                DAYS_PER_CHECKPOINT, MEMORY_BOUNDS, NUM_BINS,
-                               INTERACTION_RADIUS, VISION_RADIUS)
+                               INTERACTION_RADIUS, VISION_RADIUS, VISUALIZE)
 import json
 from typing import List
 from Cave import Cave
@@ -47,37 +47,38 @@ class World:
         # Initial checkpoint
         with open(checkpoints.joinpath(f"checkpoint_0.json"), "wt+") as f:
             json.dump(self.to_json(), f, indent=4)
-        # Make plot
-        self.fig, ((map, self.memory_bar_chart), (self.agg_hist, self.harvest_hist)) = plt.subplots(2, 2, figsize=(8, 8), tight_layout=True)
-        # Set title and axis
-        map.set_title("Map")
-        self.memory_bar_chart.set_title("Max Memory")
-        self.memory_bar_chart.set_ylabel("Num Agents")
-        self.memory_bar_chart.set_xlabel("Max Memory")
-        self.agg_hist.set_title("Aggressiveness")
-        self.agg_hist.set_ylabel("Num Agents")
-        self.agg_hist.set_xlabel("Aggressiveness")
-        self.harvest_hist.set_title("Harvest Percent")
-        self.harvest_hist.set_ylabel("Num Agents")
-        self.harvest_hist.set_xlabel("Harvest Percent")
-        # Add non mutable
-        cave_x, cave_y = [], []
-        for cave in caves:
-            cave_x.append(cave.pos.x)
-            cave_y.append(cave.pos.y)
-        map.scatter(cave_x, cave_y, c="grey", marker="^")
-        bush_x, bush_y = [], []
-        for bush in self.bushes:
-            bush_x.append(bush.pos.x)
-            bush_y.append(bush.pos.y)
-        map.scatter(bush_x, bush_y, c="green", marker="p")
-        # Add mutable
-        agent_x, agent_y = self.get_agent_pos()
-        memory, aggression, harvest = self.get_agent_data()
-        self.agent_loc = map.scatter(agent_x, agent_y, c="black", marker="o")
-        self.memory_bar_chart.hist(memory, bins=MEMORY_BOUNDS[1] + 1)
-        self.agg_hist.hist(aggression, bins=NUM_BINS)
-        self.harvest_hist.hist(harvest, bins=NUM_BINS)
+        if VISUALIZE:
+            # Make plot
+            self.fig, ((map, self.memory_bar_chart), (self.agg_hist, self.harvest_hist)) = plt.subplots(2, 2, figsize=(8, 8), tight_layout=True)
+            # Set title and axis
+            map.set_title("Map")
+            self.memory_bar_chart.set_title("Max Memory")
+            self.memory_bar_chart.set_ylabel("Num Agents")
+            self.memory_bar_chart.set_xlabel("Max Memory")
+            self.agg_hist.set_title("Aggressiveness")
+            self.agg_hist.set_ylabel("Num Agents")
+            self.agg_hist.set_xlabel("Aggressiveness")
+            self.harvest_hist.set_title("Harvest Percent")
+            self.harvest_hist.set_ylabel("Num Agents")
+            self.harvest_hist.set_xlabel("Harvest Percent")
+            # Add non mutable
+            cave_x, cave_y = [], []
+            for cave in caves:
+                cave_x.append(cave.pos.x)
+                cave_y.append(cave.pos.y)
+            map.scatter(cave_x, cave_y, c="grey", marker="^")
+            bush_x, bush_y = [], []
+            for bush in self.bushes:
+                bush_x.append(bush.pos.x)
+                bush_y.append(bush.pos.y)
+            map.scatter(bush_x, bush_y, c="green", marker="p")
+            # Add mutable
+            agent_x, agent_y = self.get_agent_pos()
+            memory, aggression, harvest = self.get_agent_data()
+            self.agent_loc = map.scatter(agent_x, agent_y, c="black", marker="o")
+            self.memory_bar_chart.hist(memory, bins=MEMORY_BOUNDS[1] + 1)
+            self.agg_hist.hist(aggression, bins=NUM_BINS)
+            self.harvest_hist.hist(harvest, bins=NUM_BINS)
 
     def get_agent_pos(self):
         agent_x, agent_y = [], []
@@ -128,9 +129,10 @@ class World:
                         interact.add(entity)
             agent.act(view, interact, timestep)
         
-        # Update pos
-        agent_x, agent_y = self.get_agent_pos()
-        self.agent_loc.set_offsets(np.array(list(zip(agent_x, agent_y))))
+        if VISUALIZE:
+            # Update map:
+            agent_x, agent_y = self.get_agent_pos()
+            self.agent_loc.set_offsets(np.array(list(zip(agent_x, agent_y))))
 
         if timestep == STEPS_PER_DAY - 1:
             # Purge all who fail to survive
@@ -148,14 +150,15 @@ class World:
             # Reset all entities
             for entity in itertools.chain(self.caves, self.bushes, self.agents):
                 entity.reset()
-            # Update statistics
-            memory, aggression, harvest = self.get_agent_data()
-            for count, rect in zip(np.histogram(memory, MEMORY_BOUNDS[1] + 1)[0], self.memory_bar_chart.patches):
-                rect.set_height(count)
-            for count, rect in zip(np.histogram(aggression, NUM_BINS)[0], self.agg_hist.patches):
-                rect.set_height(count)
-            for count, rect in zip(np.histogram(harvest, NUM_BINS)[0], self.harvest_hist.patches):
-                rect.set_height(count)
+            # Update graphs
+            if VISUALIZE:
+                memory, aggression, harvest = self.get_agent_data()
+                for count, rect in zip(np.histogram(memory, MEMORY_BOUNDS[1] + 1)[0], self.memory_bar_chart.patches):
+                    rect.set_height(count)
+                for count, rect in zip(np.histogram(aggression, NUM_BINS)[0], self.agg_hist.patches):
+                    rect.set_height(count)
+                for count, rect in zip(np.histogram(harvest, NUM_BINS)[0], self.harvest_hist.patches):
+                    rect.set_height(count)
             # If current day is at checkpoint. 
             if current_day % DAYS_PER_CHECKPOINT == 0:
                 with open(checkpoints.joinpath(f"checkpoint_{current_day}.json"), "wt+") as f:

@@ -72,6 +72,7 @@ class Agent(WorldEntity):
             else:
                 # Continue going toward goal
                 self.pos = self.pos.step_toward(self.goal.pos)
+            
         elif self.action_state == ActionSpace.Wander:
             if self.wander_spot is None:
                 self.wander_spot = self.pos.get_pos_within_radius(VISION_RADIUS)
@@ -81,13 +82,13 @@ class Agent(WorldEntity):
             if self.pos.distance_to(self.wander_spot) < INTERACTION_RADIUS:
                 self.wander_spot = None
                 # Set up goal for next action
-                if timestep % STEPS_PER_DAY < (STEPS_PER_DAY * MORNING_PERCENT):
+                if timestep < (STEPS_PER_DAY * MORNING_PERCENT):
                     # Morning, go to any berry bushes you see or know, otherwise keep wandering
                     bushes = list(filter(lambda e: type(e) == BerryBush, possible_goals))
                     if len(bushes) > 0:
                         self.action_state = ActionSpace.GoTo
                         self.goal = np.random.choice(bushes)
-                elif timestep % STEPS_PER_DAY > (STEPS_PER_DAY * (1-EVENING_PERCENT)):
+                elif timestep > (STEPS_PER_DAY * (1-EVENING_PERCENT)):
                     # Evening, go to any cave you see or know, otherwise keep ing
                     caves = list(filter(lambda e: type(e) == Cave, possible_goals))
                     if len(caves) > 0:

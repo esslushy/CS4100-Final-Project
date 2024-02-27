@@ -72,11 +72,13 @@ class Position:
         Returns:
             The new position within radius
         """
+        # Get random radius value
+        r = np.random.random() * radius
         # Get random value between 0 and 2pi
         theta = np.random.random() * 2 * np.pi
         # Compute displacement
-        dx = radius * np.cos(theta)
-        dy = radius * np.sin(theta)
+        dx = r * np.cos(theta)
+        dy = r * np.sin(theta)
         # Return new position with displacment
         return Position(self.x + dx, self.y + dy)
     
