@@ -13,10 +13,11 @@ class Cave(WorldEntity):
     """
     def __init__(self, pos: Position, max_capacity: int) -> None:
         """
-        Initializes a cave with a max capacity
+        Initializes a cave with a max capacity.
 
         Args:
-            max_capacity: The maximum number of entities in a cave
+            pos: The position of this cave.
+            max_capacity: The maximum number of entities in a cave.
         """
         super().__init__(pos)
         self.max_capacity = max_capacity
@@ -52,15 +53,27 @@ class Cave(WorldEntity):
 
     @property
     def is_full(self):
+        """
+        Says if the cave can't take another occupant.
+        """
         return len(self.occupants) == self.max_capacity
     
     def reset(self):
+        """
+        Resets the cave to empty at the start of a new day.
+        """
         self.occupants = set()
 
     def __hash__(self) -> int:
         return self.name.__hash__()
     
     def to_json(self):
+        """
+        Returns a JSON serializable form of this Cave.
+
+        Returns:
+            A dictionary of information about this Cave
+        """
         return {
             "x": self.pos.x,
             "y" : self.pos.y,
@@ -69,4 +82,13 @@ class Cave(WorldEntity):
     
     @staticmethod
     def from_json(data: dict):
+        """
+        Produces a Cave object from json data.
+
+        Args:
+            data: The JSON data to make the cave from.
+
+        Returns:
+            A new Cave based on the provided data.
+        """
         return Cave(Position(data["x"], data["y"]), data["max_capacity"])

@@ -91,4 +91,7 @@ class Position:
     
     @staticmethod
     def get_random_pos():
+        """
+        Returns a random position in the map.
+        """
         return Position(np.random.random() * MAP_SIZE, np.random.random() * MAP_SIZE)

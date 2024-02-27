@@ -192,7 +192,7 @@ class Agent(WorldEntity):
 
     def reset(self):
         """
-        Resets this entity for the start of a new day.
+        Resets this Agent for the start of a new day.
         """
         self.calories -= self.calorie_expenditure
         self.action_state = ActionSpace.Wander
@@ -205,10 +205,10 @@ class Agent(WorldEntity):
     
     def to_json(self):
         """
-        Returns a JSON form of this object
+        Returns a JSON form of this Agent
 
         Returns:
-            A JSON serializable version of this object.
+            A JSON serializable version of this Agent.
         """
         return {
             # Permenant Genes

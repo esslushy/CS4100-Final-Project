@@ -51,6 +51,9 @@ class World:
             self.make_plot()
 
     def make_plot(self):
+        """
+        Makes the plot of the map and the histograms of genes.
+        """
         # Make plot
         self.fig, ((map, self.memory_bar_chart), (self.agg_hist, self.harvest_hist)) = plt.subplots(2, 2, figsize=(8, 8), tight_layout=True)
         # Set title and axis
@@ -84,6 +87,9 @@ class World:
         self.harvest_hist.hist(harvest, bins=NUM_BINS)
 
     def get_agent_pos(self):
+        """
+        Returns the X and Y coordinates of all agents
+        """
         agent_x, agent_y = [], []
         for agent in self.agents:
             agent_x.append(agent.pos.x)
@@ -91,6 +97,9 @@ class World:
         return agent_x, agent_y
 
     def get_agent_data(self):
+        """
+        Returns the memory, aggression, and harvest genes of all agents.
+        """
         memory, aggression, harvest = [], [], []
         for agent in self.agents:
             memory.append(agent.max_memory)
@@ -100,12 +109,20 @@ class World:
 
     @staticmethod
     def from_json(data: dict):
+        """
+        Creates a world from JSON data. Used to rebuild the world from a saved initial condition.
+        Do not use checkpoints that are not initial saves as it does not restore the same memory in 
+        agents.
+        """
         caves = [Cave.from_json(c) for c in data["caves"]]
         bushes = [BerryBush.from_json(c) for c in data["caves"]]
         agents = [Agent.from_json(c) for c in data["caves"]]
         return World(caves, bushes, agents)
 
     def to_json(self):
+        """
+        Returns a JSON serializable form of this object.
+        """
         return {
             "caves": [cave.to_json() for cave in self.caves],
             "bushes": [bush.to_json() for bush in self.bushes],
