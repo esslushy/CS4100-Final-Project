@@ -50,7 +50,7 @@ class Cave(WorldEntity):
         return len(self.occupants) == self.max_capacity
     
     def reset(self):
-        self.occupants = {}
+        self.occupants = set()
 
     def __hash__(self) -> int:
         return self.name.__hash__()

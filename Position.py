@@ -45,7 +45,7 @@ class Position:
         dx = pos.x - self.x
         dy = pos.y - self.y
         # Scale to direction and step distance
-        mag = np.sqrt((dx**2) + (dy**2))
+        mag = np.sqrt((dx**2) + (dy**2)) + 1e-4
         dx *= (DISTANCE_PER_STEP/mag)
         dy *= (DISTANCE_PER_STEP/mag)
         return Position(self.x + dx, self.y + dy)

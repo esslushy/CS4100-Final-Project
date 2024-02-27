@@ -142,7 +142,9 @@ class World:
                     while not cave.is_full:
                         # Breed
                         parent1, parent2 = random.choice(parents)
-                        cave.append(Agent.from_parents(parent1, parent2))
+                        child = Agent.from_parents(parent1, parent2)
+                        cave.append(child)
+                        self.agents.append(child)
             # Reset all entities
             for entity in itertools.chain(self.caves, self.bushes, self.agents):
                 entity.reset()

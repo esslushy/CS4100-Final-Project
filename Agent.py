@@ -149,6 +149,7 @@ class Agent(WorldEntity):
         self.action_state = ActionSpace.Wander
         self.goal = None
         self.seen_today = set()
+        self.wander_spot = None
 
     def __hash__(self) -> int:
         return self.name.__hash__()
@@ -179,6 +180,10 @@ class Agent(WorldEntity):
         new_aggressiveness += (np.random.random() - 0.5) / 5
         new_harvest_percent += (np.random.random() - 0.5) / 5
         new_max_memory += np.random.randint(-2, 3)
+        # Properly bound
+        new_aggressiveness = min(max(new_aggressiveness, AGGRESSIVE_BOUNDS[0]), AGGRESSIVE_BOUNDS[1])
+        new_harvest_percent = min(max(new_harvest_percent, HARVEST_BOUNDS[0]), HARVEST_BOUNDS[1])
+        new_max_memory = min(max(new_max_memory, MEMORY_BOUNDS[0]), MEMORY_BOUNDS[1])
         # Share memory
         parent_memory = list(parent1.memory.items()) + list(parent2.memory.items())
         np.random.shuffle(parent_memory)
