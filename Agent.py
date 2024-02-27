@@ -21,7 +21,7 @@ class Agent(WorldEntity):
     goal: WorldEntity = None
     action_state = ActionSpace.Wander
     seen_today: Set[WorldEntity] = set()
-    calories: int = 0
+    calories: float = 0
     wander_spot: Position = None
     
     def __init__(self, pos: Position, aggressiveness: float, harvest_percent: float, max_memory: int, memory: OrderedDict = OrderedDict()) -> None:
@@ -122,7 +122,7 @@ class Agent(WorldEntity):
         total_calories = self.calories + other.calories
         if self_agg == other_agg:
             # both share or both steal
-            calorie_split = total_calories // 2
+            calorie_split = total_calories / 2
             self.calories = calorie_split
             other.calories = calorie_split
         else:
@@ -145,7 +145,7 @@ class Agent(WorldEntity):
         """
         Resets this entity for the start of a new day.
         """
-        self.calories = 0
+        self.calories -= self.calorie_expenditure
         self.action_state = ActionSpace.Wander
         self.goal = None
         self.seen_today = set()
