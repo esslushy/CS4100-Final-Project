@@ -6,6 +6,13 @@ class Position:
     Represents a position within a world map. Automatically binds any position to within the world map
     """
     def __init__(self, x: float, y: float) -> None:
+        """
+        Initializes a new position. Automatically limits to within the map.
+
+        Args:
+            x: The x-coord
+            y: The y-coord
+        """
         self._x = max(min(x, MAP_SIZE), 0)
         self._y = max(min(y, MAP_SIZE), 0)
 
@@ -64,13 +71,13 @@ class Position:
     
     def get_pos_within_radius(self, radius):
         """
-        Gets a random position within a radius of this position
+        Gets a random position within a radius of this position.
 
         Args:
-            radius: The radius to look within
+            radius: The radius to look within.
 
         Returns:
-            The new position within radius
+            The new position within a radius of this position.
         """
         # Get random radius value
         r = np.random.random() * radius

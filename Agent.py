@@ -24,7 +24,18 @@ class Agent(WorldEntity):
     calories: float = 0
     wander_spot: Position = None
     
-    def __init__(self, pos: Position, aggressiveness: float, harvest_percent: float, max_memory: int, memory: OrderedDict = OrderedDict()) -> None:
+    def __init__(self, pos: Position, aggressiveness: float, harvest_percent: float, 
+                 max_memory: int, memory: OrderedDict = OrderedDict()) -> None:
+        """
+        Initializes a new agent
+
+        Args:
+            pos: The position to initialize the agent on
+            aggressiveness: The agent's aggressiveness
+            harvest_percent: The percent of calories an agent can take from a bush.
+            max_memory: The maximum number of memories the agent can have.
+            memory: The memory to start the agent with.
+        """
         super().__init__(pos)
         if not self.is_well_bounded(aggressiveness, harvest_percent, max_memory):
             raise ValueError("Genetics are not within proper range.")
@@ -35,6 +46,17 @@ class Agent(WorldEntity):
         self.name = f"Agent {AgentCounter.get_next()}"
 
     def is_well_bounded(self, aggressiveness: float, harvest_percent: float, max_memory: int) -> bool:
+        """
+        Checks if aggressiveness, harvest_percent, and max_memory are well bounded.
+
+        Args:
+            aggressiveness: The agent's aggressiveness
+            harvest_percent: The percent of calories an agent can take from a bush.
+            max_memory: The maximum number of memories the agent can have.
+        
+        Returns:
+            True if well bounded, else False
+        """
         return (AGGRESSIVE_BOUNDS[0] <= aggressiveness and aggressiveness <= AGGRESSIVE_BOUNDS[1]) \
             and (HARVEST_BOUNDS[0] <= harvest_percent and harvest_percent <= HARVEST_BOUNDS[1]) \
             and (MEMORY_BOUNDS[0] <= max_memory and max_memory <= MEMORY_BOUNDS[1]) 
@@ -72,7 +94,10 @@ class Agent(WorldEntity):
             else:
                 # Continue going toward goal
                 self.pos = self.pos.step_toward(self.goal.pos)
-            
+                # If it is evening, reset to wander
+                if timestep > (STEPS_PER_DAY * (1-EVENING_PERCENT)):
+                    self.goal = None
+                    self.action_state = ActionSpace.Wander  
         elif self.action_state == ActionSpace.Wander:
             if self.wander_spot is None:
                 self.wander_spot = self.pos.get_pos_within_radius(VISION_RADIUS)
@@ -103,12 +128,24 @@ class Agent(WorldEntity):
         # If neither of these actions, we are sleeping which is no change.
 
     def interact_bush(self, bush: BerryBush):
+        """
+        How the agent interacts with a bush.
+
+        Args:
+            bush: The bush to interact with.
+        """
         self.calories += bush.harvest(self.harvest_percent)
         self.seen_today.add(bush)
         if np.random.random() < CHANCE_TO_REMEMBER_BUSH:
             self.add_memory(bush)
 
     def interact_cave(self, cave: Cave):
+        """
+        How an agent interacts with a cave
+
+        Args:
+            cave: The cave to interact with to try and enter
+        """
         cave.append(self)
         self.seen_today.add(cave)
         if np.random.random() < CHANCE_TO_REMEMBER_CAVE:
@@ -117,6 +154,9 @@ class Agent(WorldEntity):
     def interact_agent(self, other):
         """
         Interacts with another agent
+
+        Args:
+            other: The other agent to interact with, either share or steal.
         """
         self_agg = self.is_aggressive(other)
         other_agg = other.is_aggressive(self)
@@ -137,6 +177,14 @@ class Agent(WorldEntity):
         other.add_memory(self, "steal" if self_agg else "share")
 
     def add_memory(self, entity: WorldEntity, val: str = ""):
+        """
+        Adds a memory to the memory dict. Automatically drops oldest memory
+        if reached maximum size.
+
+        Args:
+            entity: The entity to add to the dict
+            val: The value of the entity (such as "steal" or "share" for agents)
+        """
         self.memory[entity] = val
         if len(self.memory) > self.max_memory:
             # Remove oldest item in memory.
@@ -156,6 +204,12 @@ class Agent(WorldEntity):
         return self.name.__hash__()
     
     def to_json(self):
+        """
+        Returns a JSON form of this object
+
+        Returns:
+            A JSON serializable version of this object.
+        """
         return {
             # Permenant Genes
             "max_memory": self.max_memory,
@@ -168,11 +222,30 @@ class Agent(WorldEntity):
     
     @staticmethod
     def from_json(data: dict):
+        """
+        Makes an Agent from saved data. Useful for rerunning an evaluation from the same initial conditions.
+
+        Args:
+            data: The data to restore values from.
+
+        Returns:
+            The Agent based on the data.
+        """
         return Agent(Position(data["x"], data["y"]), data["aggressiveness"], 
                      data["harvest_percent"], data["max_memory"])
 
     @staticmethod
     def from_parents(parent1, parent2):
+        """
+        Creates a new agent by crossover from two parents.
+
+        Args:
+            parent1: A parent Agent to get genes from
+            parent2: A parent Agent to get genes from.
+
+        Returns:
+            A new agent.
+        """
         # New genes are average
         new_aggressiveness = (parent1.aggressiveness + parent2.aggressiveness) / 2
         new_harvest_percent = (parent1.harvest_percent + parent2.harvest_percent) / 2
@@ -211,6 +284,12 @@ class Agent(WorldEntity):
     def is_aggressive(self, other) -> bool:
         """
         Determines if this entity will act aggressively.
+
+        Args:
+            other: The other agent it is acting against
+
+        Returns:
+            True if it will be aggressive, otherwise false
         """
         modifier = 0
         if other in self.memory:

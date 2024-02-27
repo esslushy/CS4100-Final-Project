@@ -37,13 +37,18 @@ class Cave(WorldEntity):
         else:
             rival = np.random.choice(list(self.occupants))
             # Interact and maybe chuck out rival
-            if agent.is_aggressive(rival) and not rival.is_aggressive(agent):
+            agent_agg = agent.is_aggressive(rival)
+            rival_agg = rival.is_aggressive(agent)
+            if agent_agg and not rival_agg:
                 # Agent successfully kicks out rival
                 self.occupants.remove(rival)
                 rival.action_state = ActionSpace.Wander
                 self.occupants.add(agent)
                 agent.action_state = ActionSpace.Sleep
                 agent.pos = self.pos
+            # Add to memory
+            agent.add_memory(rival, "steal" if rival_agg else "share")
+            rival.add_memory(agent, "steal" if agent_agg else "share")
 
     @property
     def is_full(self):

@@ -18,7 +18,10 @@ class WorldEntity(ABC):
     @abstractmethod
     def __hash__(self) -> int:
         """
-        All world entities need a hash code for speed up using sets to work.
+        Returns the hashcode of this object.
+
+        Returns:
+            The hashcode of this object.
         """
         raise NotImplementedError("Every world entity needs its own hash code.")
     
