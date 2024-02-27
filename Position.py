@@ -62,6 +62,24 @@ class Position:
         """
         return np.sqrt((self.x - pos.x)**2 + (self.y - pos.y)**2)
     
+    def get_pos_within_radius(self, radius):
+        """
+        Gets a random position within a radius of this position
+
+        Args:
+            radius: The radius to look within
+
+        Returns:
+            The new position within radius
+        """
+        # Get random value between 0 and 2pi
+        theta = np.random.random() * 2 * np.pi
+        # Compute displacement
+        dx = radius * np.cos(theta)
+        dy = radius * np.sin(theta)
+        # Return new position with displacment
+        return Position(self.x + dx, self.y + dy)
+    
     @staticmethod
     def get_random_pos():
         return Position(np.random.random() * MAP_SIZE, np.random.random() * MAP_SIZE)

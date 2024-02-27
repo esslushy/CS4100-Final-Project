@@ -1,9 +1,9 @@
 from ProjectParameters import (STEPS_PER_DAY, INIT_NUM_AGENTS, INIT_NUM_BUSHES, 
                                INIT_NUM_CAVES, INIT_CAVE_CAP, INIT_BUSH_CAP,
                                DAYS_PER_CHECKPOINT, MEMORY_BOUNDS, NUM_BINS,
-                               INTERACTION_RADIUS, VISION_RAIDUS)
+                               INTERACTION_RADIUS, VISION_RADIUS)
 import json
-from typing import List, Optional
+from typing import List
 from Cave import Cave
 from BerryBush import BerryBush
 from Agent import Agent
@@ -45,18 +45,18 @@ class World:
                 self.agents.append(Agent(Position.get_random_pos(), np.random.random(), 
                                          np.random.random(), np.random.randint(MEMORY_BOUNDS[0], MEMORY_BOUNDS[1]+1)))
         # Make plot
-        self.fig, ((map, memory_bar_chart), (agg_hist, harvest_hist)) = plt.subplots(2, 2, figsize=(8, 8), tight_layout=True)
+        self.fig, ((map, self.memory_bar_chart), (self.agg_hist, self.harvest_hist)) = plt.subplots(2, 2, figsize=(8, 8), tight_layout=True)
         # Set title and axis
         map.set_title("Map")
-        memory_bar_chart.set_title("Max Memory")
-        memory_bar_chart.set_ylabel("Num Agents")
-        memory_bar_chart.set_xlabel("Max Memory")
-        agg_hist.set_title("Aggressiveness")
-        agg_hist.set_ylabel("Num Agents")
-        agg_hist.set_xlabel("Aggressiveness")
-        harvest_hist.set_title("Harvest Percent")
-        harvest_hist.set_ylabel("Num Agents")
-        harvest_hist.set_xlabel("Harvest Percent")
+        self.memory_bar_chart.set_title("Max Memory")
+        self.memory_bar_chart.set_ylabel("Num Agents")
+        self.memory_bar_chart.set_xlabel("Max Memory")
+        self.agg_hist.set_title("Aggressiveness")
+        self.agg_hist.set_ylabel("Num Agents")
+        self.agg_hist.set_xlabel("Aggressiveness")
+        self.harvest_hist.set_title("Harvest Percent")
+        self.harvest_hist.set_ylabel("Num Agents")
+        self.harvest_hist.set_xlabel("Harvest Percent")
         # Add non mutable
         cave_x, cave_y = [], []
         for cave in caves:
@@ -72,9 +72,9 @@ class World:
         agent_x, agent_y = self.get_agent_pos()
         memory, aggression, harvest = self.get_agent_data()
         self.agent_loc = map.scatter(agent_x, agent_y, c="black", marker="o")
-        self.agent_max_memory = memory_bar_chart.hist(memory, bins=MEMORY_BOUNDS[1] + 1)
-        self.agent_aggressiveness = agg_hist.hist(aggression, bins=NUM_BINS)
-        self.agent_harvest_percent = harvest_hist.hist(harvest, bins=NUM_BINS)
+        self.memory_bar_chart.hist(memory, bins=MEMORY_BOUNDS[1] + 1)
+        self.agg_hist.hist(aggression, bins=NUM_BINS)
+        self.harvest_hist.hist(harvest, bins=NUM_BINS)
 
     def get_agent_pos(self):
         agent_x, agent_y = [], []
@@ -112,14 +112,14 @@ class World:
         Args:
             timestep: The timestep of this action
         """
-        current_day = (timestep // STEPS_PER_DAY) + 1
+        current_day = (timestep // STEPS_PER_DAY)
         timestep %= STEPS_PER_DAY
         for agent in self.agents:
             view, interact = set(), set()
             for entity in itertools.chain(self.caves, self.bushes, self.agents):
                 if entity is not agent:
                     dis = agent.pos.distance_to(entity.pos)
-                    if dis < VISION_RAIDUS:
+                    if dis < VISION_RADIUS:
                         view.add(entity)
                     if dis < INTERACTION_RADIUS:
                         interact.add(entity)
@@ -131,10 +131,26 @@ class World:
 
         if timestep == STEPS_PER_DAY - 1:
             # Purge all who fail to survive
+            self.agents = list(filter(lambda agent: agent.survived, self.agents))
             # Make new children if there is space available
+            for cave in self.caves:
+                if len(cave.occupants) >= 2:
+                    parents = list(itertools.combinations(cave.occupants, 2))
+                    while not cave.is_full:
+                        # Breed
+                        parent1, parent2 = random.choice(parents)
+                        cave.append(Agent.from_parents(parent1, parent2))
             # Reset all entities
             for entity in itertools.chain(self.caves, self.bushes, self.agents):
                 entity.reset()
+            # Update statistics
+            memory, aggression, harvest = self.get_agent_data()
+            for count, rect in zip(np.histogram(memory, MEMORY_BOUNDS[1] + 1)[0], self.memory_bar_chart.patches):
+                rect.set_height(count)
+            for count, rect in zip(np.histogram(aggression, NUM_BINS)[0], self.agg_hist.patches):
+                rect.set_height(count)
+            for count, rect in zip(np.histogram(harvest, NUM_BINS)[0], self.harvest_hist.patches):
+                rect.set_height(count)
             # If current day is at checkpoint
             if current_day % DAYS_PER_CHECKPOINT == 0:
                 with open(checkpoints.joinpath(f"checkpoint_{current_day}.json"), "wt+") as f:

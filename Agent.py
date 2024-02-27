@@ -1,10 +1,11 @@
 from ProjectParameters import AGGRESSIVE_BOUNDS, HARVEST_BOUNDS, MEMORY_BOUNDS, \
     STEPS_PER_DAY, CAL_PER_MEM, MAX_AGGR_CAL, MAX_HARVEST_CAL, CHANCE_TO_REMEMBER_BUSH, \
-    CHANCE_TO_REMEMBER_CAVE, CHANCE_TO_USE_MEMORY
+    CHANCE_TO_REMEMBER_CAVE, CHANCE_TO_USE_MEMORY, VISION_RADIUS, INTERACTION_RADIUS, \
+    MORNING_PERCENT, EVENING_PERCENT
 from ActionSpace import ActionSpace
 from WorldEntity import WorldEntity
 from Position import Position
-from typing import Set, List
+from typing import Set
 import numpy as np
 from collections import OrderedDict
 from BerryBush import BerryBush
@@ -21,6 +22,7 @@ class Agent(WorldEntity):
     action_state = ActionSpace.Wander
     seen_today: Set[WorldEntity] = set()
     calories: int = 0
+    wander_spot: Position = None
     
     def __init__(self, pos: Position, aggressiveness: float, harvest_percent: float, max_memory: int, memory: OrderedDict = OrderedDict()) -> None:
         super().__init__(pos)
@@ -37,20 +39,20 @@ class Agent(WorldEntity):
             and (HARVEST_BOUNDS[0] <= harvest_percent and harvest_percent <= HARVEST_BOUNDS[1]) \
             and (MEMORY_BOUNDS[0] <= max_memory and max_memory <= MEMORY_BOUNDS[1]) 
     
-    def act(self, view: List[WorldEntity], interact: List[WorldEntity], timestep: int):
+    def act(self, view: Set[WorldEntity], interact: Set[WorldEntity], timestep: int):
         """
         Make the entity act at a certain timestep
 
         Args:
-            view: A list of all entities in the viewing radius of the entity
-            interact: A list of all entities in the interaction raidus of the entity
+            view: A set of all entities in the viewing radius of the entity
+            interact: A set of all entities in the interaction raidus of the entity
             timestep: The current timestep for the day
         """
         # Figure out everything we know about (see and remember), filter out what we've already gone to.
         possible_goals = view.copy()
         # Some small chance to include memory
         if np.random.random() < CHANCE_TO_USE_MEMORY:
-            possible_goals.extend(self.memory.keys())
+            possible_goals.update(self.memory.keys())
         possible_goals = filter(lambda e: e not in self.seen_today, possible_goals)
         # Do action based on current state
         if self.action_state == ActionSpace.GoTo:
@@ -71,27 +73,32 @@ class Agent(WorldEntity):
                 # Continue going toward goal
                 self.pos = self.pos.step_toward(self.goal.pos)
         elif self.action_state == ActionSpace.Wander:
-            # Wander randomly
-            self.pos = self.pos.step_toward(Position.get_random_pos())
-            # Set up goal for next action
-            if timestep % STEPS_PER_DAY < (STEPS_PER_DAY * 0.1):
-                # Morning, go to any berry bushes you see or know, otherwise keep wandering
-                bushes = list(filter(lambda e: type(e) == BerryBush, possible_goals))
-                if len(bushes) > 0:
-                    self.action_state = ActionSpace.GoTo
-                    self.goal = np.random.choice(bushes)
-            elif timestep % STEPS_PER_DAY > (STEPS_PER_DAY * 0.9):
-                # Evening, go to any cave you see or know, otherwise wander
-                caves = list(filter(lambda e: type(e) == Cave, possible_goals))
-                if len(caves) > 0:
-                    self.action_state = ActionSpace.GoTo
-                    self.goal = np.random.choice(caves)
-            else:
-                # Midday, go to any bushes or entities you see or know, otherwise keep wandering
-                bushes_and_agents = list(filter(lambda e: type(e) == BerryBush or type(e) == Agent, possible_goals))
-                if len(bushes_and_agents) > 0:
-                    self.action_state = ActionSpace.GoTo
-                    self.goal = np.random.choice(bushes_and_agents)
+            if self.wander_spot is None:
+                self.wander_spot = self.pos.get_pos_within_radius(VISION_RADIUS)
+            # Wander toward picked spot
+            self.pos = self.pos.step_toward(self.wander_spot)
+            # If near spot, reset
+            if self.pos.distance_to(self.wander_spot) < INTERACTION_RADIUS:
+                self.wander_spot = None
+                # Set up goal for next action
+                if timestep % STEPS_PER_DAY < (STEPS_PER_DAY * MORNING_PERCENT):
+                    # Morning, go to any berry bushes you see or know, otherwise keep wandering
+                    bushes = list(filter(lambda e: type(e) == BerryBush, possible_goals))
+                    if len(bushes) > 0:
+                        self.action_state = ActionSpace.GoTo
+                        self.goal = np.random.choice(bushes)
+                elif timestep % STEPS_PER_DAY > (STEPS_PER_DAY * (1-EVENING_PERCENT)):
+                    # Evening, go to any cave you see or know, otherwise keep ing
+                    caves = list(filter(lambda e: type(e) == Cave, possible_goals))
+                    if len(caves) > 0:
+                        self.action_state = ActionSpace.GoTo
+                        self.goal = np.random.choice(caves)
+                else:
+                    # Midday, go to any bushes or entities you see or know, otherwise keep wandering
+                    bushes_and_agents = list(filter(lambda e: type(e) == BerryBush or type(e) == Agent, possible_goals))
+                    if len(bushes_and_agents) > 0:
+                        self.action_state = ActionSpace.GoTo
+                        self.goal = np.random.choice(bushes_and_agents)
         # If neither of these actions, we are sleeping which is no change.
 
     def interact_bush(self, bush: BerryBush):
