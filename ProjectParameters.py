@@ -15,7 +15,7 @@ MAX_AGGR_CAL = 200
 MAX_HARVEST_CAL = 100
 CAL_PER_MEM = 50
 # Initialization
-INIT_NUM_AGENTS = 100 # Number of agents could change
+INIT_NUM_AGENTS = 150 # Number of agents could change
 INIT_NUM_CAVES = 75
 INIT_CAVE_CAP = (3, 7) 
 INIT_NUM_BUSHES = 100
@@ -31,4 +31,4 @@ EVENING_PERCENT = 0.15
 DAYS_PER_CHECKPOINT = 5
 # Visualization
 VISUALIZE = True
-NUM_BINS = 10
+NUM_BINS = 25

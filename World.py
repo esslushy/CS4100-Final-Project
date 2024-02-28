@@ -1,7 +1,8 @@
 from ProjectParameters import (STEPS_PER_DAY, INIT_NUM_AGENTS, INIT_NUM_BUSHES, 
                                INIT_NUM_CAVES, INIT_CAVE_CAP, INIT_BUSH_CAP,
                                DAYS_PER_CHECKPOINT, MEMORY_BOUNDS, NUM_BINS,
-                               INTERACTION_RADIUS, VISION_RADIUS, VISUALIZE)
+                               INTERACTION_RADIUS, VISION_RADIUS, VISUALIZE,
+                               AGGRESSIVE_BOUNDS, HARVEST_BOUNDS)
 import json
 from typing import List
 from Cave import Cave
@@ -82,9 +83,9 @@ class World:
         agent_x, agent_y = self.get_agent_pos()
         memory, aggression, harvest = self.get_agent_data()
         self.agent_loc = map.scatter(agent_x, agent_y, c="black", marker="o")
-        self.memory_bar_chart.hist(memory, bins=MEMORY_BOUNDS[1] + 1)
-        self.agg_hist.hist(aggression, bins=NUM_BINS)
-        self.harvest_hist.hist(harvest, bins=NUM_BINS)
+        self.memory_bar_chart.hist(memory, bins=MEMORY_BOUNDS[1], range=MEMORY_BOUNDS)
+        self.agg_hist.hist(aggression, bins=NUM_BINS, range=AGGRESSIVE_BOUNDS)
+        self.harvest_hist.hist(harvest, bins=NUM_BINS, range=HARVEST_BOUNDS)
 
     def get_agent_pos(self):
         """
@@ -173,12 +174,19 @@ class World:
             # Update graphs
             if VISUALIZE:
                 memory, aggression, harvest = self.get_agent_data()
-                for count, rect in zip(np.histogram(memory, MEMORY_BOUNDS[1] + 1)[0], self.memory_bar_chart.patches):
+                for count, rect in zip(np.histogram(memory, MEMORY_BOUNDS[1], range=MEMORY_BOUNDS)[0], self.memory_bar_chart.patches):
                     rect.set_height(count)
-                for count, rect in zip(np.histogram(aggression, NUM_BINS)[0], self.agg_hist.patches):
+                for count, rect in zip(np.histogram(aggression, NUM_BINS, range=AGGRESSIVE_BOUNDS)[0], self.agg_hist.patches):
                     rect.set_height(count)
-                for count, rect in zip(np.histogram(harvest, NUM_BINS)[0], self.harvest_hist.patches):
+                for count, rect in zip(np.histogram(harvest, NUM_BINS, range=HARVEST_BOUNDS)[0], self.harvest_hist.patches):
                     rect.set_height(count)
+                # Allow scaling
+                self.memory_bar_chart.relim()
+                self.memory_bar_chart.autoscale()
+                self.agg_hist.relim()
+                self.agg_hist.autoscale()
+                self.harvest_hist.relim()
+                self.harvest_hist.autoscale()
             # If current day is at checkpoint. 
             if current_day % DAYS_PER_CHECKPOINT == 0:
                 with open(checkpoints.joinpath(f"checkpoint_{current_day}.json"), "wt+") as f:
