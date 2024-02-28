@@ -1,7 +1,7 @@
 from ProjectParameters import AGGRESSIVE_BOUNDS, HARVEST_BOUNDS, MEMORY_BOUNDS, \
     STEPS_PER_DAY, CAL_PER_MEM, MAX_AGGR_CAL, MAX_HARVEST_CAL, CHANCE_TO_REMEMBER_BUSH, \
     CHANCE_TO_REMEMBER_CAVE, CHANCE_TO_USE_MEMORY, VISION_RADIUS, INTERACTION_RADIUS, \
-    MORNING_PERCENT, EVENING_PERCENT
+    MORNING_PERCENT, EVENING_PERCENT, CHANCE_TO_GET_BORED, FAT_PRESERVATION_PERCENT
 from ActionSpace import ActionSpace
 from WorldEntity import WorldEntity
 from Position import Position
@@ -94,8 +94,8 @@ class Agent(WorldEntity):
             else:
                 # Continue going toward goal
                 self.pos = self.pos.step_toward(self.goal.pos)
-                # If it is evening, reset to wander
-                if timestep > (STEPS_PER_DAY * (1-EVENING_PERCENT)):
+                if np.random.random() < CHANCE_TO_GET_BORED:
+                    # Random chance to get bored and switch back to wander
                     self.goal = None
                     self.action_state = ActionSpace.Wander  
         elif self.action_state == ActionSpace.Wander:
@@ -194,7 +194,7 @@ class Agent(WorldEntity):
         """
         Resets this Agent for the start of a new day.
         """
-        self.calories -= self.calorie_expenditure
+        self.calories = FAT_PRESERVATION_PERCENT*(self.calories - self.calorie_expenditure)
         self.action_state = ActionSpace.Wander
         self.goal = None
         self.seen_today = set()
