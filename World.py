@@ -160,6 +160,7 @@ class World:
             self.agents = list(filter(lambda agent: agent.survived, self.agents))
             # Make new children if there is space available
             for cave in self.caves:
+                cave.occupants = set(filter(lambda agent: agent.survived, cave.occupants))
                 if len(cave.occupants) >= 2:
                     parents = list(itertools.combinations(cave.occupants, 2))
                     while not cave.is_full:
