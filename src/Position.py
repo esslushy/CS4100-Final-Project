@@ -95,3 +95,6 @@ class Position:
         Returns a random position in the map.
         """
         return Position(np.random.random() * MAP_SIZE, np.random.random() * MAP_SIZE)
+    
+    def __eq__(self,other):
+        return other.x == self.x and other.y == self.y

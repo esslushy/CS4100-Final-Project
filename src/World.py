@@ -15,7 +15,7 @@ import numpy as np
 from pathlib import Path
 import random
 
-checkpoints = Path("checkpoints/")
+checkpoints = Path("../checkpoints/")
 
 class World:
     def __init__(self, caves: List[Cave] = list(), bushes: List[BerryBush] = list(), 
@@ -160,7 +160,6 @@ class World:
             self.agents = list(filter(lambda agent: agent.survived, self.agents))
             # Make new children if there is space available
             for cave in self.caves:
-                cave.occupants = set(filter(lambda agent: agent.survived, cave.occupants))
                 if len(cave.occupants) >= 2:
                     parents = list(itertools.combinations(cave.occupants, 2))
                     while not cave.is_full:
