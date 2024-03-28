@@ -11,3 +11,5 @@ class Counter():
         next_num = self.count
         self.count += 1
         return next_num
+    def reset(self):
+        count = 0
