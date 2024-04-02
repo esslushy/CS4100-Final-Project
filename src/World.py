@@ -106,6 +106,7 @@ class World:
             memory.append(agent.max_memory)
             aggression.append(agent.aggressiveness)
             harvest.append(agent.harvest_percent)
+        
         return memory, aggression, harvest
 
     @staticmethod
