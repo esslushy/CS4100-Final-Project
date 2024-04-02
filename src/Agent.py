@@ -1,7 +1,24 @@
-from ProjectParameters import AGGRESSIVE_BOUNDS, HARVEST_BOUNDS, MEMORY_BOUNDS, \
-    STEPS_PER_DAY, CAL_PER_MEM, MAX_AGGR_CAL, MAX_HARVEST_CAL, CHANCE_TO_REMEMBER_BUSH, \
-    CHANCE_TO_REMEMBER_CAVE, CHANCE_TO_USE_MEMORY, VISION_RADIUS, INTERACTION_RADIUS, \
-    MORNING_PERCENT, EVENING_PERCENT, CHANCE_TO_GET_BORED, FAT_PRESERVATION_PERCENT
+from ProjectParameters import (
+    AGGRESSIVE_BOUNDS,
+    FIGHT_CAL_COST,
+    HARVEST_BOUNDS,
+    MEMORY_BOUNDS,
+    STEPS_PER_DAY,
+    CAL_PER_MEM,
+    MAX_AGGR_CAL,
+    MAX_HARVEST_CAL,
+    CHANCE_TO_REMEMBER_BUSH,
+    CHANCE_TO_REMEMBER_CAVE,
+    CHANCE_TO_USE_MEMORY,
+    TALK_CAL_COST,
+    VISION_RADIUS,
+    INTERACTION_RADIUS,
+    MORNING_PERCENT,
+    EVENING_PERCENT,
+    CHANCE_TO_GET_BORED,
+    FAT_PRESERVATION_PERCENT,
+    WALK_CAL_COST,
+)
 from ActionSpace import ActionSpace
 from WorldEntity import WorldEntity
 from Position import Position
@@ -14,18 +31,34 @@ from Cave import Cave
 
 AgentCounter = Counter()
 
+
 class Agent(WorldEntity):
     """
     Represents an agent in the world with a set of genes, goals, location, and actions
     """
+
     goal: WorldEntity = None
     action_state = ActionSpace.Wander
     seen_today: Set[WorldEntity] = set()
     calories: float = 0
+    calories_for_exercise: float = 0
     wander_spot: Position = None
-    
-    def __init__(self, pos: Position, aggressiveness: float, harvest_percent: float, 
-                 max_memory: int, memory: OrderedDict = OrderedDict()) -> None:
+    walk_cost: int
+    talk_cost: int
+    fight_cost: int
+
+    def __init__(
+        self,
+        pos: Position,
+        aggressiveness: float,
+        harvest_percent: float,
+        max_memory: int,
+        walk_cost: int,
+        talk_cost: int,
+        fight_cost: int,
+        memory: OrderedDict = OrderedDict(),
+        
+    ) -> None:
         """
         Initializes a new agent
 
@@ -44,8 +77,13 @@ class Agent(WorldEntity):
         self.max_memory = max_memory
         self.memory: OrderedDict[WorldEntity, str] = memory
         self.name = f"Agent {AgentCounter.get_next()}"
+        self.walk_cost = walk_cost
+        self.talk_cost = talk_cost
+        self.fight_cost = fight_cost
 
-    def is_well_bounded(self, aggressiveness: float, harvest_percent: float, max_memory: int) -> bool:
+    def is_well_bounded(
+        self, aggressiveness: float, harvest_percent: float, max_memory: int
+    ) -> bool:
         """
         Checks if aggressiveness, harvest_percent, and max_memory are well bounded.
 
@@ -53,14 +91,30 @@ class Agent(WorldEntity):
             aggressiveness: The agent's aggressiveness
             harvest_percent: The percent of calories an agent can take from a bush.
             max_memory: The maximum number of memories the agent can have.
-        
+
         Returns:
             True if well bounded, else False
         """
-        return (AGGRESSIVE_BOUNDS[0] <= aggressiveness and aggressiveness <= AGGRESSIVE_BOUNDS[1]) \
-            and (HARVEST_BOUNDS[0] <= harvest_percent and harvest_percent <= HARVEST_BOUNDS[1]) \
-            and (MEMORY_BOUNDS[0] <= max_memory and max_memory <= MEMORY_BOUNDS[1]) 
-    
+        return (
+            (
+                AGGRESSIVE_BOUNDS[0] <= aggressiveness
+                and aggressiveness <= AGGRESSIVE_BOUNDS[1]
+            )
+            and (
+                HARVEST_BOUNDS[0] <= harvest_percent
+                and harvest_percent <= HARVEST_BOUNDS[1]
+            )
+            and (MEMORY_BOUNDS[0] <= max_memory and max_memory <= MEMORY_BOUNDS[1])
+        )
+
+    def walk_to(self, pos: Position):
+        """
+        moves the agent closer to a position
+        also adds calor cost of locomotion
+        """
+        self.pos = self.pos.step_toward(pos)
+        self.calories_for_exercise += self.walk_cost
+
     def act(self, view: Set[WorldEntity], interact: Set[WorldEntity], timestep: int):
         """
         Make the entity act at a certain timestep
@@ -93,27 +147,29 @@ class Agent(WorldEntity):
                 self.goal = None
             else:
                 # Continue going toward goal
-                self.pos = self.pos.step_toward(self.goal.pos)
+                self.walk_to(self.goal.pos)
                 if np.random.random() < CHANCE_TO_GET_BORED:
                     # Random chance to get bored and switch back to wander
                     self.goal = None
-                    self.action_state = ActionSpace.Wander  
+                    self.action_state = ActionSpace.Wander
         elif self.action_state == ActionSpace.Wander:
             if self.wander_spot is None:
                 self.wander_spot = self.pos.get_pos_within_radius(VISION_RADIUS)
             # Wander toward picked spot
-            self.pos = self.pos.step_toward(self.wander_spot)
+            self.walk_to(self.wander_spot)
             # If near spot, reset
             if self.pos.distance_to(self.wander_spot) < INTERACTION_RADIUS:
                 self.wander_spot = None
                 # Set up goal for next action
                 if timestep < (STEPS_PER_DAY * MORNING_PERCENT):
                     # Morning, go to any berry bushes you see or know, otherwise keep wandering
-                    bushes = list(filter(lambda e: type(e) == BerryBush, possible_goals))
+                    bushes = list(
+                        filter(lambda e: type(e) == BerryBush, possible_goals)
+                    )
                     if len(bushes) > 0:
                         self.action_state = ActionSpace.GoTo
                         self.goal = np.random.choice(bushes)
-                elif timestep > (STEPS_PER_DAY * (1-EVENING_PERCENT)):
+                elif timestep > (STEPS_PER_DAY * (1 - EVENING_PERCENT)):
                     # Evening, go to any cave you see or know, otherwise keep ing
                     caves = list(filter(lambda e: type(e) == Cave, possible_goals))
                     if len(caves) > 0:
@@ -121,7 +177,12 @@ class Agent(WorldEntity):
                         self.goal = np.random.choice(caves)
                 else:
                     # Midday, go to any bushes or entities you see or know, otherwise keep wandering
-                    bushes_and_agents = list(filter(lambda e: type(e) == BerryBush or type(e) == Agent, possible_goals))
+                    bushes_and_agents = list(
+                        filter(
+                            lambda e: type(e) == BerryBush or type(e) == Agent,
+                            possible_goals,
+                        )
+                    )
                     if len(bushes_and_agents) > 0:
                         self.action_state = ActionSpace.GoTo
                         self.goal = np.random.choice(bushes_and_agents)
@@ -151,7 +212,7 @@ class Agent(WorldEntity):
         if np.random.random() < CHANCE_TO_REMEMBER_CAVE:
             self.add_memory(cave)
 
-    def interact_agent(self, other):
+    def interact_agent(self, other: "Agent"):
         """
         Interacts with another agent
 
@@ -161,6 +222,16 @@ class Agent(WorldEntity):
         self_agg = self.is_aggressive(other)
         other_agg = other.is_aggressive(self)
         total_calories = self.calories + other.calories
+        # Hanging out costs calories
+        if self_agg:
+            self.calories_for_exercise += self.talk_cost
+        if other_agg:
+            other.calories_for_exercise += other.talk_cost
+        # Fighting costs calories
+        if self_agg:
+            self.calories_for_exercise += self.fight_cost
+        if other_agg:
+            other.calories_for_exercise += other.fight_cost
         if self_agg == other_agg:
             # both share or both steal
             calorie_split = total_calories / 2
@@ -194,7 +265,10 @@ class Agent(WorldEntity):
         """
         Resets this Agent for the start of a new day.
         """
-        self.calories = FAT_PRESERVATION_PERCENT*(self.calories - self.calorie_expenditure)
+        self.calories = FAT_PRESERVATION_PERCENT * (
+            self.calories - self.calorie_expenditure
+        )
+        self.calories_for_exercise = 0
         self.action_state = ActionSpace.Wander
         self.goal = None
         self.seen_today = set()
@@ -202,7 +276,7 @@ class Agent(WorldEntity):
 
     def __hash__(self) -> int:
         return self.name.__hash__()
-    
+
     def to_json(self):
         """
         Returns a JSON form of this Agent
@@ -217,9 +291,13 @@ class Agent(WorldEntity):
             "harvest_percent": self.harvest_percent,
             # Semipermenant state
             "x": self.pos.x,
-            "y": self.pos.y
+            "y": self.pos.y,
+            # cal cost stuff
+            "talk": self.talk_cost,
+            "walk":self.walk_cost,
+            "fight":self.fight_cost
         }
-    
+
     @staticmethod
     def from_json(data: dict):
         """
@@ -231,11 +309,18 @@ class Agent(WorldEntity):
         Returns:
             The Agent based on the data.
         """
-        return Agent(Position(data["x"], data["y"]), data["aggressiveness"], 
-                     data["harvest_percent"], data["max_memory"])
+        return Agent(
+            Position(data["x"], data["y"]),
+            data["aggressiveness"],
+            data["harvest_percent"],
+            data["max_memory"],
+            data["talk"],
+            data["walk"],
+            data["fight"],
+        )
 
     @staticmethod
-    def from_parents(parent1, parent2):
+    def from_parents(parent1: "Agent", parent2: "Agent"):
         """
         Creates a new agent by crossover from two parents.
 
@@ -255,32 +340,52 @@ class Agent(WorldEntity):
         new_harvest_percent += (np.random.random() - 0.5) / 5
         new_max_memory += np.random.randint(-2, 3)
         # Properly bound
-        new_aggressiveness = min(max(new_aggressiveness, AGGRESSIVE_BOUNDS[0]), AGGRESSIVE_BOUNDS[1])
-        new_harvest_percent = min(max(new_harvest_percent, HARVEST_BOUNDS[0]), HARVEST_BOUNDS[1])
+        new_aggressiveness = min(
+            max(new_aggressiveness, AGGRESSIVE_BOUNDS[0]), AGGRESSIVE_BOUNDS[1]
+        )
+        new_harvest_percent = min(
+            max(new_harvest_percent, HARVEST_BOUNDS[0]), HARVEST_BOUNDS[1]
+        )
         new_max_memory = min(max(new_max_memory, MEMORY_BOUNDS[0]), MEMORY_BOUNDS[1])
         # Share memory
         parent_memory = list(parent1.memory.items()) + list(parent2.memory.items())
         np.random.shuffle(parent_memory)
         new_memory = OrderedDict(parent_memory[0:new_max_memory])
-        return Agent(parent1.pos, new_aggressiveness, new_harvest_percent, new_max_memory, new_memory)
+        return Agent(
+            parent1.pos,
+            new_aggressiveness,
+            new_harvest_percent,
+            new_max_memory,
+            parent1.walk_cost,
+            parent1.talk_cost,
+            parent1.fight_cost,
+            new_memory,
+            # we are assuming the parents have identical calorie costs for basic activities
+        )
 
     @property
     def calorie_expenditure(self) -> float:
         """
         Formula for base calories expenditure from genes
         """
-        return (self.aggressiveness * MAX_AGGR_CAL) + \
-                (self.harvest_percent * MAX_HARVEST_CAL) + \
-                (self.max_memory * CAL_PER_MEM)
-    
+        basic_metabalism = (
+            (self.aggressiveness * MAX_AGGR_CAL)
+            + (self.harvest_percent * MAX_HARVEST_CAL)
+            + (self.max_memory * CAL_PER_MEM)
+        )
+        return basic_metabalism + self.calories_for_exercise
+
     @property
     def survived(self) -> bool:
         """
         Tells if this entity survived a day, should be called at end of day.
         True if it is sleeping in a cave, and covered enough calories
         """
-        return self.action_state == ActionSpace.Sleep and self.calorie_expenditure < self.calories
-    
+        return (
+            self.action_state == ActionSpace.Sleep
+            and self.calorie_expenditure < self.calories
+        )
+
     def is_aggressive(self, other) -> bool:
         """
         Determines if this entity will act aggressively.
