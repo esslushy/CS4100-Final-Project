@@ -12,3 +12,6 @@ if __name__ == "__main__":
     else:
         for t in tqdm(range(NUM_DAYS * STEPS_PER_DAY), leave=True):
             world.step(t)
+        world.get_agg_plot("Aggressiveness_Evolution.png")
+        world.get_mem_plot("Memory_Evolution.png")
+        world.get_hvst_plot("Harvest_Percentage_Evolution.png")
