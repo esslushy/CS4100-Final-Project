@@ -217,7 +217,7 @@ class World:
         plt.xlabel("Checkpoint Day")
         plt.ylabel("Aggressiveness Value")
         plt.title("Evolution of Aggressiveness via Mean")
-        plt.savefig(file_name)
+        plt.savefig(file_name, format="pdf")
         plt.close()
     
     def get_mem_plot(self, file_name):
@@ -243,7 +243,7 @@ class World:
         plt.xlabel("Checkpoint Day")
         plt.ylabel("Memory Value")
         plt.title("Evolution of Memory via Mean")
-        plt.savefig(file_name)
+        plt.savefig(file_name, format="pdf")
         plt.close()
     
     def get_hvst_plot(self, file_name):
@@ -269,5 +269,21 @@ class World:
         plt.xlabel("Checkpoint Day")
         plt.ylabel("Harvest Percentage")
         plt.title("Evolution of Harvest Percentage via Mean")
-        plt.savefig(file_name)
+        plt.savefig(file_name, format="pdf")
+        plt.close()
+    
+    def plot_population(self, file_name):
+        pop_val = [] # stores populations at each checkpoint 
+        for day in range(NUM_DAYS):
+            with open(checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
+                data = json.load(f)
+                pop_val.append(len(data["agents"]))
+            f.close() 
+        
+        p_vals = np.array(pop_val)
+        plt.plot(np.array(range(NUM_DAYS)), p_vals)
+        plt.xlabel("Checkpoint Day")
+        plt.ylabel("Total Population")
+        plt.title("Total Population across Checkpoints")
+        plt.savefig(file_name, format="pdf")
         plt.close()
