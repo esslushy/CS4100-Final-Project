@@ -231,9 +231,9 @@ class World:
         mx_agg = np.array(max_agg)
         mn_agg = np.array(min_agg)
 
-        plt.plot(np.array(range(NUM_DAYS)), m_agg, label="aggressive memory", color="yellow")
-        plt.plot(np.array(range(NUM_DAYS)), mx_agg, label="max harvest percentage", color="red")
-        plt.plot(np.array(range(NUM_DAYS)), mn_agg, label="min harvest percentage", color="purple")
+        plt.plot(np.array(range(NUM_DAYS)), m_agg, label="mean aggressiveness", color="yellow")
+        plt.plot(np.array(range(NUM_DAYS)), mx_agg, label="max aggressiveness", color="red")
+        plt.plot(np.array(range(NUM_DAYS)), mn_agg, label="min aggressiveness", color="purple")
         plt.legend()
         plt.fill_between(np.array(range(NUM_DAYS)), m_agg - s_agg, m_agg + s_agg, alpha=0.5)
         plt.xlabel("Checkpoint Day")
