@@ -1,3 +1,4 @@
+import sys
 from ProjectParameters import (
     AGGRESSIVE_BOUNDS,
     FIGHT_CAL_COST,
@@ -51,7 +52,6 @@ class Agent(WorldEntity):
         harvest_percent: float,
         max_memory: int,
         memory: OrderedDict = OrderedDict(),
-        
     ) -> None:
         """
         Initializes a new agent
@@ -71,7 +71,6 @@ class Agent(WorldEntity):
         self.max_memory = max_memory
         self.memory: OrderedDict[WorldEntity, str] = memory
         self.name = f"Agent {AgentCounter.get_next()}"
-
 
     def is_well_bounded(
         self, aggressiveness: float, harvest_percent: float, max_memory: int
@@ -118,7 +117,7 @@ class Agent(WorldEntity):
         """
         # Figure out everything we know about (see and remember), filter out what we've already gone to.
         possible_goals = view.copy()
-        # Some small chance to include memory
+        # Some chance to include memory
         if np.random.random() < CHANCE_TO_USE_MEMORY:
             possible_goals.update(self.memory.keys())
         possible_goals = filter(lambda e: e not in self.seen_today, possible_goals)
@@ -166,7 +165,14 @@ class Agent(WorldEntity):
                     caves = list(filter(lambda e: type(e) == Cave, possible_goals))
                     if len(caves) > 0:
                         self.action_state = ActionSpace.GoTo
-                        self.goal = np.random.choice(caves)
+                        # an agent will go to the closest cave they can see or rememeber
+                        closest_dist = sys.maxint
+                        closest = caves[0]
+                        for c in caves:
+                            if c.pos.distance_to(self.pos) < closest_dist:
+                                closest_dist = c.pos.distance_to(self.pos)
+                                closest = c
+                        self.goal = closest
                 else:
                     # Midday, go to any bushes or entities you see or know, otherwise keep wandering
                     bushes_and_agents = list(
