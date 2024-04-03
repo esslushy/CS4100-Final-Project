@@ -19,7 +19,7 @@ if __name__ == "__main__":
     world = World(project)
     print("Starting Time =", datetime.now().strftime("%H:%M:%S"))
     if VISUALIZE:
-        ani = animation.FuncAnimation(world.fig, world.step, NUM_DAYS * STEPS_PER_DAY, interval=0, repeat=False)
+        ani = animation.FuncAnimation(world.fig, world.step, NUM_DAYS * STEPS_PER_DAY, interval=20, repeat=False)
         if AS_MP4:
             FFwriter = animation.FFMpegWriter(fps=50)
             ani.save(project.joinpath("animation.mp4"), writer = FFwriter)
