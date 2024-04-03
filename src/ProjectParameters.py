@@ -16,7 +16,9 @@ MAX_HARVEST_CAL = 100
 CAL_PER_MEM = 50
 # Calories that various activities cost
 WALK_CAL_COST = 1
-FIGHT_CAL_COST = 25
+HARVEST_CAL_COST = 10
+FIGHT_CAL_COST = 100
+
 # Initialization
 INIT_NUM_AGENTS = 150  # Number of agents could change
 INIT_NUM_CAVES = 75
@@ -33,5 +35,5 @@ EVENING_PERCENT = 0.15
 # Checkpointing
 DAYS_PER_CHECKPOINT = 5
 # Visualization
-VISUALIZE = False
+VISUALIZE = True
 NUM_BINS = 25

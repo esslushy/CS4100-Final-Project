@@ -2,6 +2,7 @@ from ProjectParameters import (
     AGGRESSIVE_BOUNDS,
     FIGHT_CAL_COST,
     HARVEST_BOUNDS,
+    HARVEST_CAL_COST,
     MEMORY_BOUNDS,
     STEPS_PER_DAY,
     CAL_PER_MEM,
@@ -187,6 +188,7 @@ class Agent(WorldEntity):
             bush: The bush to interact with.
         """
         self.calories += bush.harvest(self.harvest_percent)
+        self.calories_for_exercise += HARVEST_CAL_COST
         self.seen_today.add(bush)
         if np.random.random() < CHANCE_TO_REMEMBER_BUSH:
             self.add_memory(bush)
