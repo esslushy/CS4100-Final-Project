@@ -17,10 +17,9 @@ from pathlib import Path
 import random
 import statistics as st
 
-checkpoints = Path("../checkpoints/")
-
 class World:
     def __init__(self, 
+                 project: Path,
                  caves: List[Cave] = list(), 
                  bushes: List[BerryBush] = list(), 
                  agents: List[Agent] = list()) -> None:
@@ -32,7 +31,10 @@ class World:
             bushes: The list of bushes to initialize with
             agents: The list of agents to initialize with
         """
-        checkpoints.mkdir(exist_ok=True)
+        self.project = project
+        self.project.mkdir(exist_ok=True)
+        self.checkpoints = self.project.joinpath("checkpoints/")
+        self.checkpoints.mkdir(exist_ok=True)
         self.caves = caves
         self.bushes = bushes
         self.agents = agents
@@ -56,8 +58,8 @@ class World:
                     )
                 )
         # Initial checkpoint
-        with open(checkpoints.joinpath(f"checkpoint_0.json"), "wt+") as f:
-            json.dump(self.to_json(), f, indent=4)
+        with open(self.checkpoints.joinpath(f"checkpoint_0.json"), "wt+") as f:
+            json.dump(self.to_json(), f, indent=2)
         if VISUALIZE:
             self.make_plot()
 
@@ -200,8 +202,8 @@ class World:
                 self.harvest_hist.autoscale()
             # If current day is at checkpoint.
             if current_day % DAYS_PER_CHECKPOINT == 0:
-                with open(checkpoints.joinpath(f"checkpoint_{current_day}.json"), "wt+") as f:
-                    json.dump(self.to_json(), f, indent=4)
+                with open(self.checkpoints.joinpath(f"checkpoint_{current_day}.json"), "wt+") as f:
+                    json.dump(self.to_json(), f, indent=2)
 
                 print(f"completed day {current_day} of {NUM_DAYS} (Population: {len(self.agents)})")
 
@@ -212,7 +214,7 @@ class World:
         # obtains mean aggressiveness and std aggressivness for each checkpoint
         for day in range(NUM_DAYS):
             aggressive_vals = []
-            with open(checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
+            with open(self.checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
                 data = json.load(f)
                 for i in range(len(data["agents"])):
                     aggressive_vals.append(data["agents"][i]["aggressiveness"])
@@ -228,7 +230,7 @@ class World:
         plt.xlabel("Checkpoint Day")
         plt.ylabel("Aggressiveness Value")
         plt.title("Evolution of Aggressiveness via Mean")
-        plt.savefig(file_name, format="pdf")
+        plt.savefig(self.project.joinpath(file_name), format="pdf")
         plt.close()
     
     def get_mem_plot(self, file_name):
@@ -238,7 +240,7 @@ class World:
         # obtains mean memory and std memory for each checkpoint
         for day in range(NUM_DAYS):
             mem_vals = []
-            with open(checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
+            with open(self.checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
                 data = json.load(f)
                 for i in range(len(data["agents"])):
                     mem_vals.append(data["agents"][i]["max_memory"])
@@ -254,7 +256,7 @@ class World:
         plt.xlabel("Checkpoint Day")
         plt.ylabel("Memory Value")
         plt.title("Evolution of Memory via Mean")
-        plt.savefig(file_name, format="pdf")
+        plt.savefig(self.project.joinpath(file_name), format="pdf")
         plt.close()
     
     def get_hvst_plot(self, file_name):
@@ -264,7 +266,7 @@ class World:
          # obtains mean hvst and std hvst for each checkpoint
         for day in range(NUM_DAYS):
             hvst_vals = []
-            with open(checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
+            with open(self.checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
                 data = json.load(f)
                 for i in range(len(data["agents"])):
                     hvst_vals.append(data["agents"][i]["harvest_percent"])
@@ -280,13 +282,13 @@ class World:
         plt.xlabel("Checkpoint Day")
         plt.ylabel("Harvest Percentage")
         plt.title("Evolution of Harvest Percentage via Mean")
-        plt.savefig(file_name, format="pdf")
+        plt.savefig(self.project.joinpath(file_name), format="pdf")
         plt.close()
     
     def plot_population(self, file_name):
         pop_val = [] # stores populations at each checkpoint 
         for day in range(NUM_DAYS):
-            with open(checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
+            with open(self.checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
                 data = json.load(f)
                 pop_val.append(len(data["agents"]))
             f.close() 
@@ -296,5 +298,5 @@ class World:
         plt.xlabel("Checkpoint Day")
         plt.ylabel("Total Population")
         plt.title("Total Population across Checkpoints")
-        plt.savefig(file_name, format="pdf")
+        plt.savefig(self.project.joinpath(file_name), format="pdf")
         plt.close()
