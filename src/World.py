@@ -3,7 +3,7 @@ from ProjectParameters import (NUM_DAYS, STEPS_PER_DAY, INIT_NUM_AGENTS, INIT_NU
                                DAYS_PER_CHECKPOINT, MEMORY_BOUNDS, NUM_BINS,
                                INTERACTION_RADIUS, VISION_RADIUS, VISUALIZE,
                                AGGRESSIVE_BOUNDS, HARVEST_BOUNDS, 
-                               TALK_CAL_COST, WALK_CAL_COST, FIGHT_CAL_COST, )
+                               )
 import json
 from typing import List
 from Cave import Cave
@@ -22,10 +22,7 @@ class World:
     def __init__(self, 
                  caves: List[Cave] = list(), 
                  bushes: List[BerryBush] = list(), 
-                 agents: List[Agent] = list(),
-                 walk_cost = WALK_CAL_COST,
-                 talk_cost = TALK_CAL_COST,
-                 fight_cost = FIGHT_CAL_COST) -> None:
+                 agents: List[Agent] = list()) -> None:
         """
         Initializes a random world if all parameters are none
 
@@ -55,9 +52,6 @@ class World:
                         np.random.random(),
                         np.random.random(),
                         np.random.randint(MEMORY_BOUNDS[0], MEMORY_BOUNDS[1] + 1),
-                        walk_cost,
-                        talk_cost,
-                        fight_cost
                     )
                 )
         # Initial checkpoint

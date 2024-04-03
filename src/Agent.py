@@ -10,7 +10,6 @@ from ProjectParameters import (
     CHANCE_TO_REMEMBER_BUSH,
     CHANCE_TO_REMEMBER_CAVE,
     CHANCE_TO_USE_MEMORY,
-    TALK_CAL_COST,
     VISION_RADIUS,
     INTERACTION_RADIUS,
     MORNING_PERCENT,
@@ -43,9 +42,6 @@ class Agent(WorldEntity):
     calories: float = 0
     calories_for_exercise: float = 0
     wander_spot: Position = None
-    walk_cost: int
-    talk_cost: int
-    fight_cost: int
 
     def __init__(
         self,
@@ -53,9 +49,6 @@ class Agent(WorldEntity):
         aggressiveness: float,
         harvest_percent: float,
         max_memory: int,
-        walk_cost: int,
-        talk_cost: int,
-        fight_cost: int,
         memory: OrderedDict = OrderedDict(),
         
     ) -> None:
@@ -77,9 +70,7 @@ class Agent(WorldEntity):
         self.max_memory = max_memory
         self.memory: OrderedDict[WorldEntity, str] = memory
         self.name = f"Agent {AgentCounter.get_next()}"
-        self.walk_cost = walk_cost
-        self.talk_cost = talk_cost
-        self.fight_cost = fight_cost
+
 
     def is_well_bounded(
         self, aggressiveness: float, harvest_percent: float, max_memory: int
@@ -113,7 +104,7 @@ class Agent(WorldEntity):
         also adds calor cost of locomotion
         """
         self.pos = self.pos.step_toward(pos)
-        self.calories_for_exercise += self.walk_cost
+        self.calories_for_exercise += WALK_CAL_COST
 
     def act(self, view: Set[WorldEntity], interact: Set[WorldEntity], timestep: int):
         """
@@ -222,16 +213,11 @@ class Agent(WorldEntity):
         self_agg = self.is_aggressive(other)
         other_agg = other.is_aggressive(self)
         total_calories = self.calories + other.calories
-        # Hanging out costs calories
-        if self_agg:
-            self.calories_for_exercise += self.talk_cost
-        if other_agg:
-            other.calories_for_exercise += other.talk_cost
         # Fighting costs calories
         if self_agg:
-            self.calories_for_exercise += self.fight_cost
+            self.calories_for_exercise += FIGHT_CAL_COST
         if other_agg:
-            other.calories_for_exercise += other.fight_cost
+            other.calories_for_exercise += FIGHT_CAL_COST
         if self_agg == other_agg:
             # both share or both steal
             calorie_split = total_calories / 2
@@ -292,10 +278,6 @@ class Agent(WorldEntity):
             # Semipermenant state
             "x": self.pos.x,
             "y": self.pos.y,
-            # cal cost stuff
-            "talk": self.talk_cost,
-            "walk":self.walk_cost,
-            "fight":self.fight_cost
         }
 
     @staticmethod
@@ -314,9 +296,6 @@ class Agent(WorldEntity):
             data["aggressiveness"],
             data["harvest_percent"],
             data["max_memory"],
-            data["talk"],
-            data["walk"],
-            data["fight"],
         )
 
     @staticmethod
@@ -356,9 +335,6 @@ class Agent(WorldEntity):
             new_aggressiveness,
             new_harvest_percent,
             new_max_memory,
-            parent1.walk_cost,
-            parent1.talk_cost,
-            parent1.fight_cost,
             new_memory,
             # we are assuming the parents have identical calorie costs for basic activities
         )

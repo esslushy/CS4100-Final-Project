@@ -1,5 +1,5 @@
 import pytest
-from ProjectParameters import FIGHT_CAL_COST, TALK_CAL_COST, WALK_CAL_COST
+from ProjectParameters import FIGHT_CAL_COST, WALK_CAL_COST
 import test_setup
 
 from collections import OrderedDict
@@ -25,9 +25,6 @@ def basic_agent():
         aggressiveness,
         harvest_percent,
         max_memory,
-        WALK_CAL_COST,
-        TALK_CAL_COST,
-        FIGHT_CAL_COST,
     )
     return agent
 
