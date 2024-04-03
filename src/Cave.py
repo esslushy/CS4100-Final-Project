@@ -4,6 +4,7 @@ from typing import Set
 from WorldEntity import WorldEntity
 from Counter import Counter
 from Position import Position
+from src.ProjectParameters import FIGHT_CAL_COST
 
 CaveCounter = Counter()
 
@@ -40,6 +41,10 @@ class Cave(WorldEntity):
             # Interact and maybe chuck out rival
             agent_agg = agent.is_aggressive(rival)
             rival_agg = rival.is_aggressive(agent)
+            if agent_agg:
+                agent.calories_for_exercise += FIGHT_CAL_COST
+            if rival_agg:
+                rival.calories_for_exercise += FIGHT_CAL_COST
             if agent_agg and not rival_agg:
                 # Agent successfully kicks out rival
                 self.occupants.remove(rival)

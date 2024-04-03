@@ -1,3 +1,4 @@
+from datetime import datetime
 from ProjectParameters import (NUM_DAYS, STEPS_PER_DAY, INIT_NUM_AGENTS, INIT_NUM_BUSHES, 
                                INIT_NUM_CAVES, INIT_CAVE_CAP, INIT_BUSH_CAP,
                                DAYS_PER_CHECKPOINT, MEMORY_BOUNDS, NUM_BINS,
@@ -116,7 +117,7 @@ class World:
             memory.append(agent.max_memory)
             aggression.append(agent.aggressiveness)
             harvest.append(agent.harvest_percent)
-        
+
         return memory, aggression, harvest
 
     @staticmethod
@@ -160,7 +161,7 @@ class World:
                     if dis < INTERACTION_RADIUS:
                         interact.add(entity)
             agent.act(view, interact, timestep)
-
+        
         if VISUALIZE:
             # Update map:
             agent_x, agent_y = self.get_agent_pos()
@@ -219,7 +220,7 @@ class World:
                 mean_agg.append(st.mean(aggressive_vals))
                 std_agg.append(st.stdev(aggressive_vals))
             f.close()
-        
+
         m_agg = np.array(mean_agg)
         s_agg = np.array(std_agg)
 
@@ -230,7 +231,7 @@ class World:
         plt.title("Evolution of Aggressiveness via Mean")
         plt.savefig(file_name, format="pdf")
         plt.close()
-    
+
     def get_mem_plot(self, file_name):
         mean_mem = [] # list of mean memory values per checkpoint
         std_mem = [] # list of std memory values per checkpoint
@@ -256,12 +257,12 @@ class World:
         plt.title("Evolution of Memory via Mean")
         plt.savefig(file_name, format="pdf")
         plt.close()
-    
+
     def get_hvst_plot(self, file_name):
         mean_hvst = [] # list of mean harvest values per checkpoint
         std_hvst = [] # list of std harvest values per checkpoint 
 
-         # obtains mean hvst and std hvst for each checkpoint
+        # obtains mean hvst and std hvst for each checkpoint
         for day in range(NUM_DAYS):
             hvst_vals = []
             with open(checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
@@ -271,7 +272,7 @@ class World:
                 mean_hvst.append(st.mean(hvst_vals))
                 std_hvst.append(st.stdev(hvst_vals))
             f.close() 
-        
+
         m_hvst = np.array(mean_hvst)
         s_hvst = np.array(std_hvst)
 
@@ -282,7 +283,7 @@ class World:
         plt.title("Evolution of Harvest Percentage via Mean")
         plt.savefig(file_name, format="pdf")
         plt.close()
-    
+
     def plot_population(self, file_name):
         pop_val = [] # stores populations at each checkpoint 
         for day in range(NUM_DAYS):
@@ -290,7 +291,7 @@ class World:
                 data = json.load(f)
                 pop_val.append(len(data["agents"]))
             f.close() 
-        
+
         p_vals = np.array(pop_val)
         plt.plot(np.array(range(NUM_DAYS)), p_vals)
         plt.xlabel("Checkpoint Day")
