@@ -35,3 +35,4 @@ if __name__ == "__main__":
     world.plot_population("Total Population across Checkpoints.pdf")
     with project.joinpath("params.json").open("wt+") as f:
         json.dump({v: eval(v) for v in dir(ProjectParameters) if not v.startswith("__")}, f, indent=2)
+    

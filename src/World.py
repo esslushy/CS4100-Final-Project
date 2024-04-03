@@ -210,8 +210,10 @@ class World:
     def get_agg_plot(self, file_name):
         mean_agg = [] # list of mean aggressiveness values per checkpoint
         std_agg = [] # list of std aggressiveness values per checkpoint 
+        max_agg = [] # list of max aggressiveness values per checkpoint 
+        min_agg = [] # list of min aggressiveness values per checkpoint
 
-        # obtains mean aggressiveness and std aggressivness for each checkpoint
+        # obtains max aggressiveness, min aggressiveness, mean aggressiveness and std aggressivness for each checkpoint
         for day in range(NUM_DAYS):
             aggressive_vals = []
             with open(self.checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
@@ -220,13 +222,20 @@ class World:
                     aggressive_vals.append(data["agents"][i]["aggressiveness"])
                 mean_agg.append(st.mean(aggressive_vals))
                 std_agg.append(st.stdev(aggressive_vals))
+                max_agg.append(max(aggressive_vals))
+                min_agg.append(min(aggressive_vals))
             f.close()
         
         m_agg = np.array(mean_agg)
         s_agg = np.array(std_agg)
+        mx_agg = np.array(max_agg)
+        mn_agg = np.array(min_agg)
 
         plt.plot(np.array(range(NUM_DAYS)), m_agg, label="aggressive memory", color="yellow")
-        plt.fill_between(np.array(range(NUM_DAYS)), m_agg - s_agg, m_agg + s_agg)
+        plt.plot(np.array(range(NUM_DAYS)), mx_agg, label="max harvest percentage", color="red")
+        plt.plot(np.array(range(NUM_DAYS)), mn_agg, label="min harvest percentage", color="purple")
+        plt.legend()
+        plt.fill_between(np.array(range(NUM_DAYS)), m_agg - s_agg, m_agg + s_agg, alpha=0.5)
         plt.xlabel("Checkpoint Day")
         plt.ylabel("Aggressiveness Value")
         plt.title("Evolution of Aggressiveness via Mean")
@@ -236,8 +245,10 @@ class World:
     def get_mem_plot(self, file_name):
         mean_mem = [] # list of mean memory values per checkpoint
         std_mem = [] # list of std memory values per checkpoint
+        max_mem = [] # list of maximum max memory values per checkpoint 
+        min_mem = [] # list of minimum max memory values per checkpoint
 
-        # obtains mean memory and std memory for each checkpoint
+        # obtains maximum of max memory, minimum of max memory, mean of max memory and std of max memory for each checkpoint
         for day in range(NUM_DAYS):
             mem_vals = []
             with open(self.checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
@@ -246,13 +257,20 @@ class World:
                     mem_vals.append(data["agents"][i]["max_memory"])
                 mean_mem.append(st.mean(mem_vals))
                 std_mem.append(st.stdev(mem_vals))
+                max_mem.append(max(mem_vals))
+                min_mem.append(min(mem_vals))
             f.close() 
 
         m_mem = np.array(mean_mem)
         s_mem = np.array(std_mem)
+        mx_mem = np.array(max_mem)
+        mn_mem = np.array(min_mem)
 
         plt.plot(np.array(range(NUM_DAYS)), m_mem, label="mean max memory", color="yellow")
-        plt.fill_between(np.array(range(NUM_DAYS)), m_mem - s_mem, m_mem + s_mem)
+        plt.plot(np.array(range(NUM_DAYS)), mx_mem, label="maximum of max memory", color="red")
+        plt.plot(np.array(range(NUM_DAYS)), mn_mem, label="minumum of max percentage", color="purple")
+        plt.legend()
+        plt.fill_between(np.array(range(NUM_DAYS)), m_mem - s_mem, m_mem + s_mem, alpha=0.5)
         plt.xlabel("Checkpoint Day")
         plt.ylabel("Memory Value")
         plt.title("Evolution of Memory via Mean")
@@ -262,8 +280,10 @@ class World:
     def get_hvst_plot(self, file_name):
         mean_hvst = [] # list of mean harvest values per checkpoint
         std_hvst = [] # list of std harvest values per checkpoint 
+        max_hvst = [] # list of max harvest values per checkpoint 
+        min_hvst = [] # list of min harvest values per checkpoint
 
-         # obtains mean hvst and std hvst for each checkpoint
+         # obtains max hvst, min hvst, mean hvst and std hvst for each checkpoint
         for day in range(NUM_DAYS):
             hvst_vals = []
             with open(self.checkpoints.joinpath(f"checkpoint_{day}.json"), "r") as f:
@@ -272,13 +292,20 @@ class World:
                     hvst_vals.append(data["agents"][i]["harvest_percent"])
                 mean_hvst.append(st.mean(hvst_vals))
                 std_hvst.append(st.stdev(hvst_vals))
+                max_hvst.append(max(hvst_vals))
+                min_hvst.append(min(hvst_vals))
             f.close() 
         
         m_hvst = np.array(mean_hvst)
         s_hvst = np.array(std_hvst)
+        mx_hvst = np.array(max_hvst)
+        mn_hvst = np.array(min_hvst)
 
-        plt.plot(np.array(range(NUM_DAYS)), m_hvst, label="harvest percentage", color="yellow")
-        plt.fill_between(np.array(range(NUM_DAYS)), m_hvst - s_hvst, m_hvst + s_hvst)
+        plt.plot(np.array(range(NUM_DAYS)), m_hvst, label="mean harvest percentage", color="yellow")
+        plt.plot(np.array(range(NUM_DAYS)), mx_hvst, label="max harvest percentage", color="red")
+        plt.plot(np.array(range(NUM_DAYS)), mn_hvst, label="min harvest percentage", color="purple")
+        plt.legend()
+        plt.fill_between(np.array(range(NUM_DAYS)), m_hvst - s_hvst, m_hvst + s_hvst, alpha=0.5)
         plt.xlabel("Checkpoint Day")
         plt.ylabel("Harvest Percentage")
         plt.title("Evolution of Harvest Percentage via Mean")
