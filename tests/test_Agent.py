@@ -1,4 +1,5 @@
 import pytest
+from ProjectParameters import FIGHT_CAL_COST, WALK_CAL_COST
 import test_setup
 
 from collections import OrderedDict
@@ -12,14 +13,21 @@ import numpy as np
 
 AgentCounter.reset()
 
+
 @pytest.fixture
 def basic_agent():
     pos = Position(0, 0)
     aggressiveness = 0.5
     harvest_percent = 0.5
     max_memory = 5
-    agent = Agent(pos, aggressiveness, harvest_percent, max_memory)
+    agent = Agent(
+        pos,
+        aggressiveness,
+        harvest_percent,
+        max_memory,
+    )
     return agent
+
 
 def test_agent_initialization(basic_agent):
     assert basic_agent.pos == Position(0 ,0), "Agent's position should be initialized correctly."
@@ -71,4 +79,3 @@ def test_agent_json_deserialization():
 
 if __name__ == "__main__":
     pytest.main()
-

@@ -2,7 +2,8 @@ from ProjectParameters import (NUM_DAYS, STEPS_PER_DAY, INIT_NUM_AGENTS, INIT_NU
                                INIT_NUM_CAVES, INIT_CAVE_CAP, INIT_BUSH_CAP,
                                DAYS_PER_CHECKPOINT, MEMORY_BOUNDS, NUM_BINS,
                                INTERACTION_RADIUS, VISION_RADIUS, VISUALIZE,
-                               AGGRESSIVE_BOUNDS, HARVEST_BOUNDS)
+                               AGGRESSIVE_BOUNDS, HARVEST_BOUNDS, 
+                               )
 import json
 from typing import List
 from Cave import Cave
@@ -19,7 +20,9 @@ import statistics as st
 checkpoints = Path("../checkpoints/")
 
 class World:
-    def __init__(self, caves: List[Cave] = list(), bushes: List[BerryBush] = list(), 
+    def __init__(self, 
+                 caves: List[Cave] = list(), 
+                 bushes: List[BerryBush] = list(), 
                  agents: List[Agent] = list()) -> None:
         """
         Initializes a random world if all parameters are none
@@ -44,8 +47,14 @@ class World:
                                              random.randrange(INIT_BUSH_CAP[0], INIT_BUSH_CAP[1]+1, 50)))
         if len(self.agents) == 0:
             for _ in range(INIT_NUM_AGENTS):
-                self.agents.append(Agent(Position.get_random_pos(), np.random.random(), 
-                                         np.random.random(), np.random.randint(MEMORY_BOUNDS[0], MEMORY_BOUNDS[1]+1)))
+                self.agents.append(
+                    Agent(
+                        Position.get_random_pos(),
+                        np.random.random(),
+                        np.random.random(),
+                        np.random.randint(MEMORY_BOUNDS[0], MEMORY_BOUNDS[1] + 1),
+                    )
+                )
         # Initial checkpoint
         with open(checkpoints.joinpath(f"checkpoint_0.json"), "wt+") as f:
             json.dump(self.to_json(), f, indent=4)
@@ -118,8 +127,8 @@ class World:
         agents.
         """
         caves = [Cave.from_json(c) for c in data["caves"]]
-        bushes = [BerryBush.from_json(c) for c in data["caves"]]
-        agents = [Agent.from_json(c) for c in data["caves"]]
+        bushes = [BerryBush.from_json(c) for c in data["bushes"]]
+        agents = [Agent.from_json(c) for c in data["agents"]]
         return World(caves, bushes, agents)
 
     def to_json(self):
@@ -151,7 +160,7 @@ class World:
                     if dis < INTERACTION_RADIUS:
                         interact.add(entity)
             agent.act(view, interact, timestep)
-        
+
         if VISUALIZE:
             # Update map:
             agent_x, agent_y = self.get_agent_pos()
@@ -189,10 +198,12 @@ class World:
                 self.agg_hist.autoscale()
                 self.harvest_hist.relim()
                 self.harvest_hist.autoscale()
-            # If current day is at checkpoint. 
+            # If current day is at checkpoint.
             if current_day % DAYS_PER_CHECKPOINT == 0:
                 with open(checkpoints.joinpath(f"checkpoint_{current_day}.json"), "wt+") as f:
                     json.dump(self.to_json(), f, indent=4)
+
+                print(f"completed day {current_day} of {NUM_DAYS} (Population: {len(self.agents)})")
 
     def get_agg_plot(self, file_name):
         mean_agg = [] # list of mean aggressiveness values per checkpoint
