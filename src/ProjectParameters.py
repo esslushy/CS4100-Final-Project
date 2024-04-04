@@ -19,8 +19,8 @@ WALK_CAL_COST = 0.5
 HARVEST_CAL_COST = 4
 FIGHT_CAL_COST = 10
 # Initialization
-INIT_NUM_AGENTS = 150  # Number of agents could change
-INIT_NUM_CAVES = 75
+INIT_NUM_AGENTS = 100  # Number of agents could change
+INIT_NUM_CAVES = 70
 INIT_CAVE_CAP = (3, 7)
 INIT_NUM_BUSHES = 100
 INIT_BUSH_CAP = (400, 800)

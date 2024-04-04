@@ -42,7 +42,7 @@ class Agent(WorldEntity):
     action_state = ActionSpace.Wander
     seen_today: Set[WorldEntity] = set()
     calories: float = 0
-    calories_for_exercise: float = 0
+    calories_burned_for_exercise: float = 0
     wander_spot: Position = None
 
     def __init__(
@@ -104,7 +104,7 @@ class Agent(WorldEntity):
         also adds calor cost of locomotion
         """
         self.pos = self.pos.step_toward(pos)
-        self.calories_for_exercise += WALK_CAL_COST
+        self.calories_burned_for_exercise += WALK_CAL_COST
 
     def act(self, view: Set[WorldEntity], interact: Set[WorldEntity], timestep: int):
         """
@@ -194,7 +194,7 @@ class Agent(WorldEntity):
             bush: The bush to interact with.
         """
         self.calories += bush.harvest(self.harvest_percent)
-        self.calories_for_exercise += HARVEST_CAL_COST
+        self.calories_burned_for_exercise += HARVEST_CAL_COST
         self.seen_today.add(bush)
         if np.random.random() < CHANCE_TO_REMEMBER_BUSH:
             self.add_memory(bush)
@@ -223,9 +223,9 @@ class Agent(WorldEntity):
         total_calories = self.calories + other.calories
         # Fighting costs calories
         if self_agg:
-            self.calories_for_exercise += FIGHT_CAL_COST
+            self.calories_burned_for_exercise += FIGHT_CAL_COST
         if other_agg:
-            other.calories_for_exercise += FIGHT_CAL_COST
+            other.calories_burned_for_exercise += FIGHT_CAL_COST
         if self_agg == other_agg:
             # both share or both steal
             calorie_split = total_calories / 2
@@ -262,7 +262,7 @@ class Agent(WorldEntity):
         self.calories = FAT_PRESERVATION_PERCENT * (
             self.calories - self.calorie_expenditure
         )
-        self.calories_for_exercise = 0
+        self.calories_burned_for_exercise = 0
         self.action_state = ActionSpace.Wander
         self.goal = None
         self.seen_today = set()
@@ -357,7 +357,7 @@ class Agent(WorldEntity):
             + (self.harvest_percent * MAX_HARVEST_CAL)
             + (self.max_memory * CAL_PER_MEM)
         )
-        return basic_metabalism + self.calories_for_exercise
+        return basic_metabalism + self.calories_burned_for_exercise
 
     @property
     def survived(self) -> bool:
