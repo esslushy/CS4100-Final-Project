@@ -2,7 +2,7 @@ from ProjectParameters import (NUM_DAYS, STEPS_PER_DAY, INIT_NUM_AGENTS, INIT_NU
                                INIT_NUM_CAVES, INIT_CAVE_CAP, INIT_BUSH_CAP,
                                DAYS_PER_CHECKPOINT, MEMORY_BOUNDS, NUM_BINS,
                                INTERACTION_RADIUS, VISION_RADIUS, VISUALIZE,
-                               AGGRESSIVE_BOUNDS, HARVEST_BOUNDS, 
+                               AGGRESSIVE_BOUNDS, HARVEST_BOUNDS, AS_MP4
                                )
 import json
 from typing import List
@@ -67,19 +67,29 @@ class World:
         """
         Makes the plot of the map and the histograms of genes.
         """
-        # Make plot
-        self.fig, ((map, self.memory_bar_chart), (self.agg_hist, self.harvest_hist)) = plt.subplots(2, 2, figsize=(8, 8), tight_layout=True)
-        # Set title and axis
+        if AS_MP4:
+            self.fig, map = plt.subplots(figsize=(8, 8), tight_layout=True)
+        else:
+            # Make plot
+            self.fig, ((map, self.memory_bar_chart), (self.agg_hist, self.harvest_hist)) = plt.subplots(2, 2, figsize=(8, 8), tight_layout=True)
+            # Set title and axis
+            self.memory_bar_chart.set_title("Max Memory")
+            self.memory_bar_chart.set_ylabel("Num Agents")
+            self.memory_bar_chart.set_xlabel("Max Memory")
+            self.agg_hist.set_title("Aggressiveness")
+            self.agg_hist.set_ylabel("Num Agents")
+            self.agg_hist.set_xlabel("Aggressiveness")
+            self.harvest_hist.set_title("Harvest Percent")
+            self.harvest_hist.set_ylabel("Num Agents")
+            self.harvest_hist.set_xlabel("Harvest Percent")
+            # Add mutable
+            memory, aggression, harvest = self.get_agent_data()
+            self.memory_bar_chart.hist(memory, bins=MEMORY_BOUNDS[1], range=MEMORY_BOUNDS)
+            self.agg_hist.hist(aggression, bins=NUM_BINS, range=AGGRESSIVE_BOUNDS)
+            self.harvest_hist.hist(harvest, bins=NUM_BINS, range=HARVEST_BOUNDS)
+
+        # Map stuff
         map.set_title("Map")
-        self.memory_bar_chart.set_title("Max Memory")
-        self.memory_bar_chart.set_ylabel("Num Agents")
-        self.memory_bar_chart.set_xlabel("Max Memory")
-        self.agg_hist.set_title("Aggressiveness")
-        self.agg_hist.set_ylabel("Num Agents")
-        self.agg_hist.set_xlabel("Aggressiveness")
-        self.harvest_hist.set_title("Harvest Percent")
-        self.harvest_hist.set_ylabel("Num Agents")
-        self.harvest_hist.set_xlabel("Harvest Percent")
         # Add non mutable
         cave_x, cave_y = [], []
         for cave in self.caves:
@@ -91,13 +101,8 @@ class World:
             bush_x.append(bush.pos.x)
             bush_y.append(bush.pos.y)
         map.scatter(bush_x, bush_y, c="green", marker="p")
-        # Add mutable
         agent_x, agent_y = self.get_agent_pos()
-        memory, aggression, harvest = self.get_agent_data()
         self.agent_loc = map.scatter(agent_x, agent_y, c="black", marker="o")
-        self.memory_bar_chart.hist(memory, bins=MEMORY_BOUNDS[1], range=MEMORY_BOUNDS)
-        self.agg_hist.hist(aggression, bins=NUM_BINS, range=AGGRESSIVE_BOUNDS)
-        self.harvest_hist.hist(harvest, bins=NUM_BINS, range=HARVEST_BOUNDS)
 
     def get_agent_pos(self):
         """
@@ -185,7 +190,7 @@ class World:
             for entity in itertools.chain(self.caves, self.bushes, self.agents):
                 entity.reset()
             # Update graphs
-            if VISUALIZE:
+            if VISUALIZE and not AS_MP4:
                 memory, aggression, harvest = self.get_agent_data()
                 for count, rect in zip(np.histogram(memory, MEMORY_BOUNDS[1], range=MEMORY_BOUNDS)[0], self.memory_bar_chart.patches):
                     rect.set_height(count)
