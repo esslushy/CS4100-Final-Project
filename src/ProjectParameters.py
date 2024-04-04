@@ -20,13 +20,13 @@ HARVEST_CAL_COST = 4
 FIGHT_CAL_COST = 10
 # Initialization
 INIT_NUM_AGENTS = 100  # Number of agents could change
-INIT_NUM_CAVES = 70
-INIT_CAVE_CAP = (3, 7)
-INIT_NUM_BUSHES = 100
-INIT_BUSH_CAP = (400, 800)
+INIT_NUM_CAVES = 30
+INIT_CAVE_CAP = (7, 12)
+INIT_NUM_BUSHES = 50
+INIT_BUSH_CAP = (1000, 1500)
 MAP_SIZE = 50  # Square
 # How long to run
-NUM_DAYS = 25
+NUM_DAYS = 100
 STEPS_PER_DAY = 250
 # How much of the day to consider morning and evening.
 MORNING_PERCENT = 0.15
