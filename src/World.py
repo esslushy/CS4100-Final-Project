@@ -1,5 +1,6 @@
 from datetime import datetime
-from ProjectParameters import (NUM_DAYS, STEPS_PER_DAY, INIT_NUM_AGENTS, INIT_NUM_BUSHES, 
+import pprint
+from ProjectParameters import (MAP_SIZE, NUM_DAYS, STEPS_PER_DAY, INIT_NUM_AGENTS, INIT_NUM_BUSHES, 
                                INIT_NUM_CAVES, INIT_CAVE_CAP, INIT_BUSH_CAP,
                                DAYS_PER_CHECKPOINT, MEMORY_BOUNDS, NUM_BINS,
                                INTERACTION_RADIUS, VISION_RADIUS, VISUALIZE,
@@ -61,6 +62,21 @@ class World:
             json.dump(self.to_json(), f, indent=4)
         if VISUALIZE:
             self.make_plot()
+
+        # create zones
+        zones = []
+        for i in range((MAP_SIZE // VISION_RADIUS)+1):
+            row = []
+            for i2 in range((MAP_SIZE // VISION_RADIUS)+1):
+                j_list = []
+                for j in itertools.chain(self.caves, self.bushes):
+                    jx = j.pos.x // VISION_RADIUS
+                    jy = j.pos.y // VISION_RADIUS
+                    if (jx == i or jx == i+1 or jx == i-1) and (jy == i2 or jy == i2+1 or jy == i2-1):
+                        j_list.append(j)
+                row.append(j_list)
+            zones.append(row)
+        self.zones = zones
 
     def make_plot(self):
         """
@@ -143,6 +159,7 @@ class World:
         }
 
     def step(self, timestep: int):
+
         """
         Represents a single step in the world.
 
@@ -151,17 +168,37 @@ class World:
         """
         current_day = (timestep // STEPS_PER_DAY) + 1
         timestep %= STEPS_PER_DAY
+
+        # create zones of agents
+        agent_zones = []
+        for i in range((MAP_SIZE // VISION_RADIUS) + 1):
+            row = []
+            for i2 in range((MAP_SIZE // VISION_RADIUS) + 1):
+                j_list = []
+                for j in self.agents:
+                    jx = j.pos.x // VISION_RADIUS
+                    jy = j.pos.y // VISION_RADIUS
+                    if (jx == i or jx == i + 1 or jx == i - 1) and (
+                        jy == i2 or jy == i2 + 1 or jy == i2 - 1
+                    ):
+                        j_list.append(j)
+                row.append(j_list)
+            agent_zones.append(row)
+
         for agent in self.agents:
             view, interact = set(), set()
-            for entity in itertools.chain(self.caves, self.bushes, self.agents):
+            for entity in itertools.chain(self.zones[int(agent.pos.x / VISION_RADIUS)][int(agent.pos.y / VISION_RADIUS)],agent_zones[int(agent.pos.x / VISION_RADIUS)][int(agent.pos.y / VISION_RADIUS)]):
+            # for entity in itertools.chain(self.caves, self.bushes, self.agents):
+
                 if entity is not agent:
                     dis = agent.pos.distance_to(entity.pos)
                     if dis < VISION_RADIUS:
                         view.add(entity)
                     if dis < INTERACTION_RADIUS:
                         interact.add(entity)
+
             agent.act(view, interact, timestep)
-        
+
         if VISUALIZE:
             # Update map:
             agent_x, agent_y = self.get_agent_pos()
@@ -204,7 +241,8 @@ class World:
                 with open(checkpoints.joinpath(f"checkpoint_{current_day}.json"), "wt+") as f:
                     json.dump(self.to_json(), f, indent=4)
 
-                print(f"completed day {current_day} of {NUM_DAYS} (Population: {len(self.agents)})")
+                # print(f"completed day {current_day} of {NUM_DAYS} (Population: {len(self.agents)})")
+
 
     def get_agg_plot(self, file_name):
         mean_agg = [] # list of mean aggressiveness values per checkpoint

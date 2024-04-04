@@ -4,7 +4,7 @@ from typing import Set
 from WorldEntity import WorldEntity
 from Counter import Counter
 from Position import Position
-from src.ProjectParameters import FIGHT_CAL_COST
+from ProjectParameters import FIGHT_CAL_COST
 
 CaveCounter = Counter()
 

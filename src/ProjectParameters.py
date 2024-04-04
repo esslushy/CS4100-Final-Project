@@ -13,12 +13,11 @@ FAT_PRESERVATION_PERCENT = 0.5
 # Calorie parameters
 MAX_AGGR_CAL = 200
 MAX_HARVEST_CAL = 100
-CAL_PER_MEM = 50
+CAL_PER_MEM = 10
 # Calories that various activities cost
-WALK_CAL_COST = 1
-HARVEST_CAL_COST = 10
-FIGHT_CAL_COST = 100
-
+WALK_CAL_COST = 0.5
+HARVEST_CAL_COST = 4
+FIGHT_CAL_COST = 10
 # Initialization
 INIT_NUM_AGENTS = 150  # Number of agents could change
 INIT_NUM_CAVES = 75
@@ -27,7 +26,7 @@ INIT_NUM_BUSHES = 100
 INIT_BUSH_CAP = (400, 800)
 MAP_SIZE = 50  # Square
 # How long to run
-NUM_DAYS = 100
+NUM_DAYS = 25
 STEPS_PER_DAY = 250
 # How much of the day to consider morning and evening.
 MORNING_PERCENT = 0.15
@@ -35,5 +34,6 @@ EVENING_PERCENT = 0.15
 # Checkpointing
 DAYS_PER_CHECKPOINT = 1
 # Visualization
-VISUALIZE = True
+VISUALIZE = False
+AS_MP4 = False
 NUM_BINS = 25

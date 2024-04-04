@@ -8,7 +8,6 @@ from tqdm import tqdm
 if __name__ == "__main__":
 
     world = World()
-
     print("Starting Time =", datetime.now().strftime("%H:%M:%S"))
     if VISUALIZE:
         ani = animation.FuncAnimation(
@@ -16,10 +15,10 @@ if __name__ == "__main__":
         )
         plt.show()
     else:
-        """
+        """"""
         for t in tqdm(range(NUM_DAYS * STEPS_PER_DAY), leave=True):
             world.step(t)
-        """
+        
         world.get_agg_plot("Aggressiveness_Evolution.pdf")
         world.get_mem_plot("Memory_Evolution.pdf")
         world.get_hvst_plot("Harvest_Percentage_Evolution.pdf")
