@@ -1,4 +1,3 @@
-import sys
 from ProjectParameters import (
     AGGRESSIVE_BOUNDS,
     FIGHT_CAL_COST,
@@ -166,13 +165,7 @@ class Agent(WorldEntity):
                     if len(caves) > 0:
                         self.action_state = ActionSpace.GoTo
                         # an agent will go to the closest cave they can see or rememeber
-                        closest_dist = sys.maxint
-                        closest = caves[0]
-                        for c in caves:
-                            if c.pos.distance_to(self.pos) < closest_dist:
-                                closest_dist = c.pos.distance_to(self.pos)
-                                closest = c
-                        self.goal = closest
+                        self.goal = np.random.choice(caves)
                 else:
                     # Midday, go to any bushes or entities you see or know, otherwise keep wandering
                     bushes_and_agents = list(
