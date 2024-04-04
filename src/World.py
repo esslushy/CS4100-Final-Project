@@ -1,4 +1,6 @@
-from ProjectParameters import (NUM_DAYS, STEPS_PER_DAY, INIT_NUM_AGENTS, INIT_NUM_BUSHES, 
+from datetime import datetime
+import pprint
+from ProjectParameters import (MAP_SIZE, NUM_DAYS, STEPS_PER_DAY, INIT_NUM_AGENTS, INIT_NUM_BUSHES, 
                                INIT_NUM_CAVES, INIT_CAVE_CAP, INIT_BUSH_CAP,
                                DAYS_PER_CHECKPOINT, MEMORY_BOUNDS, NUM_BINS,
                                INTERACTION_RADIUS, VISION_RADIUS, VISUALIZE,
@@ -63,6 +65,21 @@ class World:
         if VISUALIZE:
             self.make_plot()
 
+        # create zones
+        zones = []
+        for i in range((MAP_SIZE // VISION_RADIUS)+1):
+            row = []
+            for i2 in range((MAP_SIZE // VISION_RADIUS)+1):
+                j_list = []
+                for j in itertools.chain(self.caves, self.bushes):
+                    jx = j.pos.x // VISION_RADIUS
+                    jy = j.pos.y // VISION_RADIUS
+                    if (jx == i or jx == i+1 or jx == i-1) and (jy == i2 or jy == i2+1 or jy == i2-1):
+                        j_list.append(j)
+                row.append(j_list)
+            zones.append(row)
+        self.zones = zones
+
     def make_plot(self):
         """
         Makes the plot of the map and the histograms of genes.
@@ -123,7 +140,7 @@ class World:
             memory.append(agent.max_memory)
             aggression.append(agent.aggressiveness)
             harvest.append(agent.harvest_percent)
-        
+
         return memory, aggression, harvest
 
     @staticmethod
@@ -149,6 +166,7 @@ class World:
         }
 
     def step(self, timestep: int):
+
         """
         Represents a single step in the world.
 
@@ -157,15 +175,35 @@ class World:
         """
         current_day = (timestep // STEPS_PER_DAY) + 1
         timestep %= STEPS_PER_DAY
+
+        # create zones of agents
+        agent_zones = []
+        for i in range((MAP_SIZE // VISION_RADIUS) + 1):
+            row = []
+            for i2 in range((MAP_SIZE // VISION_RADIUS) + 1):
+                j_list = []
+                for j in self.agents:
+                    jx = j.pos.x // VISION_RADIUS
+                    jy = j.pos.y // VISION_RADIUS
+                    if (jx == i or jx == i + 1 or jx == i - 1) and (
+                        jy == i2 or jy == i2 + 1 or jy == i2 - 1
+                    ):
+                        j_list.append(j)
+                row.append(j_list)
+            agent_zones.append(row)
+
         for agent in self.agents:
             view, interact = set(), set()
-            for entity in itertools.chain(self.caves, self.bushes, self.agents):
+            for entity in itertools.chain(self.zones[int(agent.pos.x / VISION_RADIUS)][int(agent.pos.y / VISION_RADIUS)],agent_zones[int(agent.pos.x / VISION_RADIUS)][int(agent.pos.y / VISION_RADIUS)]):
+            # for entity in itertools.chain(self.caves, self.bushes, self.agents):
+
                 if entity is not agent:
                     dis = agent.pos.distance_to(entity.pos)
                     if dis < VISION_RADIUS:
                         view.add(entity)
                     if dis < INTERACTION_RADIUS:
                         interact.add(entity)
+
             agent.act(view, interact, timestep)
 
         if VISUALIZE:
@@ -211,7 +249,8 @@ class World:
                 with open(self.checkpoints.joinpath(f"checkpoint_{current_day}.json"), "wt+") as f:
                     json.dump(self.to_json(), f, indent=2)
 
-                print(f"completed day {current_day} of {NUM_DAYS} (Population: {len(self.agents)})")
+                # print(f"completed day {current_day} of {NUM_DAYS} (Population: {len(self.agents)})")
+
 
     def get_agg_plot(self, file_name):
         mean_agg = [] # list of mean aggressiveness values per checkpoint
@@ -231,7 +270,7 @@ class World:
                 max_agg.append(max(aggressive_vals))
                 min_agg.append(min(aggressive_vals))
             f.close()
-        
+
         m_agg = np.array(mean_agg)
         s_agg = np.array(std_agg)
         mx_agg = np.array(max_agg)
@@ -247,7 +286,7 @@ class World:
         plt.title("Evolution of Aggressiveness via Mean")
         plt.savefig(self.project.joinpath(file_name), format="pdf")
         plt.close()
-    
+
     def get_mem_plot(self, file_name):
         mean_mem = [] # list of mean memory values per checkpoint
         std_mem = [] # list of std memory values per checkpoint
@@ -282,7 +321,7 @@ class World:
         plt.title("Evolution of Memory via Mean")
         plt.savefig(self.project.joinpath(file_name), format="pdf")
         plt.close()
-    
+
     def get_hvst_plot(self, file_name):
         mean_hvst = [] # list of mean harvest values per checkpoint
         std_hvst = [] # list of std harvest values per checkpoint 
@@ -301,7 +340,7 @@ class World:
                 max_hvst.append(max(hvst_vals))
                 min_hvst.append(min(hvst_vals))
             f.close() 
-        
+
         m_hvst = np.array(mean_hvst)
         s_hvst = np.array(std_hvst)
         mx_hvst = np.array(max_hvst)
@@ -317,7 +356,7 @@ class World:
         plt.title("Evolution of Harvest Percentage via Mean")
         plt.savefig(self.project.joinpath(file_name), format="pdf")
         plt.close()
-    
+
     def plot_population(self, file_name):
         pop_val = [] # stores populations at each checkpoint 
         for day in range(NUM_DAYS):
@@ -325,7 +364,7 @@ class World:
                 data = json.load(f)
                 pop_val.append(len(data["agents"]))
             f.close() 
-        
+
         p_vals = np.array(pop_val)
         plt.plot(np.array(range(NUM_DAYS)), p_vals)
         plt.xlabel("Checkpoint Day")
